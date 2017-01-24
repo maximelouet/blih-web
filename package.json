@@ -1,0 +1,23 @@
+{
+  "name": "blih-web",
+  "version": "0.0.1",
+  "description": "Web interface for Epitech BLIH",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/maximelouet/blih-web.git"
+  },
+  "author": "Maxime Louet",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maximelouet/blih-web/issues"
+  },
+  "homepage": "https://github.com/maximelouet/blih-web#readme"
+}
