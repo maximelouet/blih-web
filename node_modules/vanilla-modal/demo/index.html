@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Vanilla Modal</title>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="page.css">
+    <link rel="stylesheet" href="modal.css">
+  </head>
+  <body>
+
+    <div class="modal-links">
+      <ul>
+        <li>
+          <a href="#modal-1" data-modal-open>One Prodigious Cat</a>
+        </li>
+        <li>
+          <a href="#modal-2" data-modal-open>One More Prodigious Cat</a>
+        </li>
+        <li>
+          <a href="#modal-3" data-modal-open>Example Website</a>
+        </li>
+      </ul>
+    </div>
+
+    <div id="modal-1" style="display:none">
+      <img src="http://i.imgur.com/AzKAV.jpg" width="239" height="170" alt="Just Can't Reach.">
+    </div>
+
+    <div id="modal-2" style="display:none">
+      <img src="http://www.gifbin.com/bin/032014/1395614704_cat_vs_steam.gif" width="396" height="275" alt="Almost Caught It.">
+    </div>
+
+    <div id="modal-3" style="display:none">
+      <iframe src="http://example.com" width="360" height="576" frameborder="0"></iframe>
+    </div>
+
+    <div class="modal">
+      <div class="modal-inner">
+        <span data-modal-close>&times;</span>
+        <div class="modal-content"></div>
+      </div>
+    </div>
+
+    <script src="../dist/index.js"></script>
+    <script>var modal = new VanillaModal.default();</script>
+  </body>
+</html>

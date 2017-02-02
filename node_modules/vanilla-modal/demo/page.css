@@ -1,0 +1,69 @@
+/**
+ * These styles DO NOT PERTAIN to the modal itself.
+ * They are used purely as exemplary styles for the demo page.
+ */
+@import url(http://fonts.googleapis.com/css?family=Montserrat);
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  white-space: nowrap;
+  text-align: center;
+  background: #efefef;
+  font-family: 'Montserrat', sans-serif;
+}
+
+body:before {
+  height: 100%;
+  width: 0;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  content: "";
+}
+
+body > * {
+  white-space: normal;
+}
+
+.modal-links {
+  display: inline-block;
+  background: #fff;
+  padding: 40px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+}
+
+.modal-links ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.modal-links li {
+  background: #dfdfdf;
+}
+
+.modal-links a {
+  display: block;
+  background: #fff;
+  padding: 20px 30px;
+  color: #777;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-size: 12px;
+  transition: 0.2s;
+}
+
+.modal-links a:hover {
+  transform: translate(-2px, -2px);
+}
+
+.modal-content {
+  font-size: 0;
+}

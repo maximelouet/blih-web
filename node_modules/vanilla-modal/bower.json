@@ -1,0 +1,24 @@
+{
+  "name": "vanilla-modal",
+  "description": "A dependency-free CSS-driven plain JavaScript modal written in ECMAScript 2015.",
+  "main": "dist/index.js",
+  "authors": [
+    "Ben Ceglowski <bceglowski@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "modal",
+    "ecmascript",
+    "harmony",
+    "es6",
+    "es2015"
+  ],
+  "homepage": "https://github.com/thephuse/vanilla-modal",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
