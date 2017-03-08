@@ -9,7 +9,7 @@ app.set('view engine', 'ejs')
 
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '0.9.0';
+var VERSION = '0.9.2';
 
 
 app.use(function (req, res, next) {
@@ -52,7 +52,6 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
       }
       else
         res.status(response.statusCode).send(body)
-        console.log("Received " + response.statusCode + " : \n" + JSON.stringify(body))
     }
     else
     {
