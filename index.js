@@ -37,7 +37,6 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
     url: 'https://blih.epitech.eu' + url,
     body: JSON.parse(signed_data)
   };
-  console.log(JSON.stringify(options));
   request(options, function (error, response, body) {
     if (!error)
     {
