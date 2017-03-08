@@ -1,15 +1,22 @@
 var express = require('express')
 var bodyParser = require('body-parser')
-var app = express()
+var fs = require('fs')
+var path = require('path')
 var request = require('request')
+var morgan = require('morgan')
+
+var app = express()
 
 app.disable('x-powered-by')
-
 app.set('view engine', 'ejs')
-
 app.use(bodyParser.urlencoded({ extended: true }))
 
 var VERSION = '0.9.2';
+
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
+
+// setup the logger
+app.use(morgan('combined', {stream: accessLogStream}))
 
 
 app.use(function (req, res, next) {
@@ -52,6 +59,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
       }
       else
         res.status(response.statusCode).send(body)
+      console.log("Signed data " + signed_data + " received " + JSON.stringify(body))
     }
     else
     {
@@ -79,13 +87,11 @@ app.post('/api/repogetinfo', function (req, res) {
 })
 app.post('/api/repocreate', function (req, res) {
   blih('POST', '/repositories', req.body.signed_data, false, res);
-  console.log(JSON.stringify(req.body.signed_data))
 })
 app.post('/api/repodel', function (req, res) {
   blih('DELETE', '/repository/' + req.body.resource, req.body.signed_data, false, res)
 })
 app.post('/api/reposetacl', function (req, res) {
-  console.log(req.body.signed_data)
   blih('POST', '/repository/' + req.body.resource + '/acls', req.body.signed_data, false, res)
 })
 
@@ -109,6 +115,6 @@ app.use(function (req, res, next) {
   res.status(404).send('404')
 });
 
-app.listen(80, function () {
+app.listen(3000, function () {
   console.log('Started BLIH Web on port 80.')
 })
