@@ -1,10 +1,15 @@
 {
   "name": "blih-web",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Web interface for Epitech BLIH",
   "main": "index.js",
   "dependencies": {
-    "express": "^4.14.0"
+    "body-parser": "^1.16.0",
+    "ejs": "^2.5.5",
+    "express": "^4.14.0",
+    "multer": "^1.2.1",
+    "request": "^2.79.0",
+    "vanilla-modal": "^1.6.4"
   },
   "devDependencies": {},
   "scripts": {
