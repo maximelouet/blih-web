@@ -165,36 +165,40 @@ function repoOpen(name)
 {
   loader(true);
   var repoinfo = document.getElementById('repo-info');
-  var repoinfoacl = document.getElementById('repo-info-acl');
+  var repoinfoacl = document.getElementById('repo-info-acl-container');
   repoinfo.innerHTML = 'Loading repository info...';
   repoinfoacl.innerHTML = 'Loading ACL...';
   showModal('repo-info', name, '<button class="bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl-edit\', function(){refreshRepolist();hideModal(\'repo-info\');});"><i class="i i-refresh"></i> Save ACLs</button><button class="bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
   repoGetInfo(name, function(success, status, response) {
     if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
     {
-      repoinfo.innerHTML = 'Created: ' + new Date(parseInt(response.message['creation_time'])*1000).toLocaleString() + '<br>' + 'UUID: ' + response.message['uuid'];
+      var date = new Date(parseInt(response.message['creation_time']) * 1000);
+      repoinfo.innerHTML = 'Created: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + 'UUID: ' + response.message['uuid'];
+
+      repoinfoacl.innerHTML = '<p>ACLs <button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading...</span></ul>';
+      repoGetAcl(name, function(success, status, response) {
+        if (success)
+        {
+          repoinfoacl.innerHTML = '<p>ACLs <button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading</span></ul>';
+          if (response.hasOwnProperty('error'))
+            document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
+          else
+          {
+            for (key in response)
+            {
+              if (response.hasOwnProperty(key))
+                aclAdd('repo-info-acl', key, response[key], false);
+            }
+          }
+        }
+        else
+          handleApiError(status, response);
+        loader(false);
+      });
+
     }
     else
       handleError(true, 'An error occured');
-  });
-  repoGetAcl(name, function(success, status, response) {
-    if (success)
-    {
-      repoinfoacl.innerHTML = '<strong>ACLs</strong>:<button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl-edit\',  \'\', \'\', true);"> + </button><ul id="repo-info-acl-edit" class="acl-list" data-aclnb="0"></ul>';
-      if (response.hasOwnProperty('error'))
-        document.getElementById('repo-info-acl-edit').innerHTML = '<span>(' + response['error'] + ')</span>';
-      else
-      {
-        for (key in response)
-        {
-          if (response.hasOwnProperty(key))
-            aclAdd('repo-info-acl-edit', key, response[key], false);
-        }
-      }
-    }
-    else
-      handleApiError(status, response);
-    loader(false);
   });
 }
 
@@ -294,7 +298,7 @@ function login() {
 
 function aclAdd(aclRootElmId, user, rights, intended) {
     var aclRootElm = document.getElementById(aclRootElmId);
-    if (parseInt(aclRootElm.dataset.aclnb) + 1 > 5)
+    if (parseInt(aclRootElm.dataset.aclnb) + 1 > 7)
       return ;
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
       aclRootElm.innerHTML = '';
@@ -411,4 +415,12 @@ function repoSetAcl(repo, acluser, aclrights, callback) {
   }
   var repoacl = { acl: aclrights, user: acluser };
   retrieve('reposetacl', repo, repoacl, callback);
+}
+
+function resetRepoCreateModal() {
+  var aclelm = document.getElementById('repo-create-acl');
+  document.getElementById('repo-create-name').value = '';
+  aclelm.innerHTML = '<span>(No ACLs)</span>';
+  aclelm.dataset.aclnb = 0;
+  aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
 }

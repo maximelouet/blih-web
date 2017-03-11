@@ -23,9 +23,21 @@ header {
     text-align: left;
 }
 footer {
+    text-align: right;
     display: block;
     padding-top: 1rem;
     padding-bottom: 2rem;
+}
+.a-beautiful-heart {
+  fill: #EF1944;
+  width: 1em;
+  animation: love 5s ease infinite;
+}
+
+@keyframes love {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 h1, h2, h3 {
     margin: 0; padding: 0; font-weight: normal;
@@ -106,7 +118,7 @@ label {
     color: #555;
     padding: .1em 0 .4em;
 }
-.repo-create-acl label {
+.acl-container label {
     display: inline-block;
 }
 input {
@@ -114,7 +126,7 @@ input {
 }
 input:not([type=submit]):not([type=checkbox]) {
     margin: 0 0 .5em 0;
-    padding: .4em .5em;
+    padding: .45em .5em .5em;
     box-shadow: none;
     background: #fff!important;
     outline: none!important;
@@ -154,9 +166,24 @@ button:active {
     margin-top: -2em;
 }
 
+.acl-container {
+  padding: 1em 0;
+  position: relative;
+}
+.acl-container > p { /* "ACLs and add button" */
+  font-weight: bold;
+  margin-top: 0;
+}
+.acl-add {
+  position: absolute;
+  top: .7em; right: 0;
+}
 .acl-add, .acl-rem {
-    width: 2em;
-    text-align: center;
+  text-align: center;
+}
+.acl-rem {
+  float: right;
+  font-weight: bold;
 }
 .acl-list li > input[type="text"] {
     width: calc(90% - 7rem);
@@ -478,7 +505,7 @@ h3#modal-title {
 
 
 @media all and (max-width: 1200px) {
-    header, main {
+    header, main, footer {
         padding-left: 15vw;
         padding-right: 15vw;
     }
@@ -487,7 +514,7 @@ h3#modal-title {
     }
 }
 @media all and (max-width: 800px) {
-    header, main {
+    header, main, footer {
         padding-left: 5vw;
         padding-right: 5vw;
     }
