@@ -88,7 +88,7 @@ function refreshRepolist() {
       for (repo in response)
       {
         if (response.hasOwnProperty(repo))
-          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
+          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
       }
       document.getElementById('repolist').innerHTML = repoList;
     }
@@ -157,7 +157,7 @@ function retrieve(url, resource, data, callback) {
 
 function promptDelete(repo) {
   document.getElementById('repo-delete-confirmname').value = '';
-  showModal('repo-delete', repo, '<button class="bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); if(document.getElementById(\'repo-delete-confirmname\').value == \'' + repo + '\') { repoDelete(\'' + repo + '\'); } else { handleError(\'Wrong confirmation\') };" disabled>Confirm</button>');
+  showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); if(document.getElementById(\'repo-delete-confirmname\').value == \'' + repo + '\') { repoDelete(\'' + repo + '\'); } else { handleError(\'Wrong confirmation\') };" disabled>Confirm</button>');
   document.getElementById('repo-delete-confirmname').focus();
 }
 
@@ -168,37 +168,35 @@ function repoOpen(name)
   var repoinfoacl = document.getElementById('repo-info-acl-container');
   repoinfo.innerHTML = 'Loading repository info...';
   repoinfoacl.innerHTML = 'Loading ACL...';
-  showModal('repo-info', name, '<button class="bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl-edit\', function(){refreshRepolist();hideModal(\'repo-info\');});"><i class="i i-refresh"></i> Save ACLs</button><button class="bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+  showModal('repo-info', name, '<button class="btn bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl\', function(){refreshRepolist();hideModal(\'repo-info\');});"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+  repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading...</span></ul>';
   repoGetInfo(name, function(success, status, response) {
     if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
     {
       var date = new Date(parseInt(response.message['creation_time']) * 1000);
       repoinfo.innerHTML = 'Created: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + 'UUID: ' + response.message['uuid'];
-
-      repoinfoacl.innerHTML = '<p>ACLs <button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading...</span></ul>';
-      repoGetAcl(name, function(success, status, response) {
-        if (success)
-        {
-          repoinfoacl.innerHTML = '<p>ACLs <button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading</span></ul>';
-          if (response.hasOwnProperty('error'))
-            document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
-          else
-          {
-            for (key in response)
-            {
-              if (response.hasOwnProperty(key))
-                aclAdd('repo-info-acl', key, response[key], false);
-            }
-          }
-        }
-        else
-          handleApiError(status, response);
-        loader(false);
-      });
-
     }
     else
       handleError(true, 'An error occured');
+  });
+  repoGetAcl(name, function(success, status, response) {
+    if (success)
+    {
+      repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading</span></ul>';
+      if (response.hasOwnProperty('error'))
+        document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
+      else
+      {
+        for (key in response)
+        {
+          if (response.hasOwnProperty(key))
+            aclAdd('repo-info-acl', key, response[key], false);
+        }
+      }
+    }
+    else
+      handleApiError(status, response);
+    loader(false);
   });
 }
 
@@ -281,7 +279,7 @@ function login() {
       for (repo in response)
       {
         if (response.hasOwnProperty(repo))
-          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button class="bg-red" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
+          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
       }
       document.getElementById('repolist').innerHTML = repoList;
     }
@@ -316,6 +314,7 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     }
     name.maxlength = 84;
     var span = document.createElement('span');
+    span.className = 'acl-rights';
     var label1 = document.createElement('label');
     var label2 = document.createElement('label');
     var label3 = document.createElement('label');
@@ -359,7 +358,7 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     span.appendChild(label2);
     span.appendChild(label3);
     var button = document.createElement('button');
-    button.className = 'acl-rem bg-red';
+    button.className = 'btn acl-rem bg-red';
     button.onclick = function(e){e.stopPropagation(); aclRem(this.parentElement.parentElement, this.parentElement)};
     var btntext = document.createTextNode(' - ');
     button.appendChild(btntext);
@@ -417,10 +416,12 @@ function repoSetAcl(repo, acluser, aclrights, callback) {
   retrieve('reposetacl', repo, repoacl, callback);
 }
 
-function resetRepoCreateModal() {
+function showRepoCreate() {
   var aclelm = document.getElementById('repo-create-acl');
   document.getElementById('repo-create-name').value = '';
   aclelm.innerHTML = '<span>(No ACLs)</span>';
   aclelm.dataset.aclnb = 0;
   aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
+  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(this.parentElement.children[1].value, \'repo-create-acl\', function(repo){ repoSetAllAcl(repo, \'repo-create-acl\', function() { handleSuccess(true, \'ACL correctly applied.\'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
+  document.getElementById('repo-create-name').focus();
 }

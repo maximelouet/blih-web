@@ -79,6 +79,8 @@ body:not(.logged-in) #logged-in-user, body:not(.logged-in) .logout {
     padding: 1.6em .5em 1.55em 1em;
     z-index: 99;
     color: inherit;
+    cursor: pointer;
+    background: none!important;
     color: rgba(255, 255, 255, 0.7);
 }
 .logout:hover {
@@ -138,7 +140,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
     box-shadow: inset 0 0 0 1px #691a99;
 }
 
-a.button, button {
+.btn {
     padding: .4em .7em .55em;
     color: #fff;
     border: none!important;
@@ -146,16 +148,16 @@ a.button, button {
     box-shadow: none!important;
 }
 
-#login button {
+#login .btn {
     margin-top: 1em;
     padding: .7em 1em;
     float: right;
 }
 
-button:active {
+.btn:active {
     color: rgba(255, 255, 255, 0.6);
 }
-.loading button, button[disabled] {
+.loading .btn, .btn[disabled], button[disabled] {
     opacity: .7;
     pointer-events: none;
 }
@@ -259,7 +261,7 @@ button:active {
     right: 0; top: 0; bottom: 0;
     background: transparent;
 }
-#repolist li:hover > button {
+#repolist li:hover > .btn {
     opacity: 1;
 }
 #repolist button:hover {
@@ -322,7 +324,7 @@ html:not(.loading) #loader {
 html.loading {
     cursor: progress;
 }
-html.act-disabled a, html.act-disabled button {
+html.act-disabled a, html.act-disabled .btn {
     pointer-events: none;
 }
 
@@ -421,6 +423,9 @@ h3#modal-title {
     margin-top: -.8em;
     display: block;
 }
+#modal-act .btn {
+  margin-left: .4em;
+}
 
 
 
@@ -497,6 +502,9 @@ h3#modal-title {
 :root .acl-list input[type="checkbox"]:checked + span::before
 {
     content: "\2713";
+}
+.acl-rights {
+  margin-left: .2em;
 }
 
 

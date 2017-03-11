@@ -14,7 +14,7 @@
   <span style="position:fixed;display:block;bottom:0;left:0;pointer-events:none;padding:1em;background:#C22F1C">DEVELOPMENT VERSION<br>please do not share</span>
   <h1><a href="/" onclick="if (Guser != false) { event.preventDefault(); refreshRepolist(); this.blur(); }" id="brand">BLIH Web</a></h1>
   <div id="loader"></div>
-  <a href="/" class="logout" title="Logout" onclick="loader(true);"><i class="i i-sign-out"></i></a>
+  <button class="logout" title="Logout" onclick="loader(true); window.location.href='/';"><i class="i i-sign-out"></i></button>
   <span id="logged-in-user"></span>
 </header>
 <div id="info-container" class="info-container hidden" onclick="infoHandle('hidden', false); this.blur();" title="Click to dismiss"></div>
@@ -27,12 +27,12 @@
       <input type="text" placeholder="firstname.lastname@epitech.eu" id="login-user" autofocus>
       <label for="login-pass">Password</label>
       <input type="password" placeholder="IONIS password" id="login-pass">
-      <button class="bg-green" onclick="event.preventDefault(); login(); return false;">Login <i class="i i-right"></i></button>
+      <button class="btn bg-green" onclick="event.preventDefault(); login(); return false;">Login <i class="i i-right"></i></button>
     </form>
   </section>
   <section id="repos">
     <h2>Repositories</h2>
-    <button class="bg-green repo-create" onclick="event.preventDefault(); resetRepoCreateModal(); showModal('repo-create', 'Create a repository', false); document.getElementById('repo-create-name').focus();"><i class="i i-plus"></i> Create</button>
+    <button class="btn bg-green repo-create" onclick="event.preventDefault(); showRepoCreate();"><i class="i i-plus"></i> Create</button>
     <ul id="repolist"></ul>
   </section>
 </main>
@@ -57,10 +57,9 @@
 <div id="modal-repo-create" class="modal-hider">
   <label for="repo-create-name">Name</label><input type="text" id="repo-create-name" maxlength="84" onkeydown="if (event.keyCode == 13) document.getElementById('repo-create-confirmbutton').click()">
   <div class="acl-container">
-    <p>ACLs <button class="acl-add bg-green" onclick="event.preventDefault(); aclAdd('repo-create-acl', '', '', true);" title="Add an ACL"> + </button></p>
+    <p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd('repo-create-acl', '', '', true);" title="Add an ACL"> + </button></p>
     <ul id="repo-create-acl" class="acl-list" data-aclnb="0"><span>(No ACLs)</span></ul>
   </div>
-  <button class="bg-green" onclick="event.preventDefault(); repoCreate(this.parentElement.children[1].value, 'repo-create-acl', function(repo){ repoSetAllAcl(repo, 'repo-create-acl', function() { handleSuccess(true, 'ACL correctly applied.'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>
 </div>
 <footer><p>Created with <svg class="a-beautiful-heart" viewBox="0 0 32 29.6"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://maximelouet.me">Maxime Louet</a> (EPITECH Paris 2021).</p><p>Version <%= version %>.</p><p><a href="https://github.com/maximelouet/blih-web/issues">Bug report</a></p></footer>
 <script src="/modal.js"></script>
