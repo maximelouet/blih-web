@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '0.9.5';
+var VERSION = '0.9.6';
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
 
