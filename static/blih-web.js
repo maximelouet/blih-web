@@ -215,20 +215,23 @@ function repoCreate(name, aclRootElmId) {
   retrieve('repocreate', false, repoinfo, function(success, status, response) {
     if (success)
     {
-      setTimeout(function(){
-        handleSuccess(true, 'The repository <strong>' + name + '</strong> has been created.');
-      }, 300);
-      document.getElementById('repo-create-name').value = '';
       repoSetAllAcl(name, aclRootElmId, function(success, status, response) {
         if (success)
+        {
           hideModal('repo-create');
+          handleSuccess(true, 'The repository <strong>' + name + '</strong> has been created with the specified ACLs.');
+        }
         else
           handleError(true, JSON.stringify(response));
+        loader(false);
+        refreshRepolist();
       });
     }
     else
+    {
       handleApiError(status, response);
-    loader(false);
+      loader(false);
+    }
   });
 }
 
@@ -422,6 +425,6 @@ function showRepoCreate() {
   aclelm.innerHTML = '<span>(No ACLs)</span>';
   aclelm.dataset.aclnb = 0;
   aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
-  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(this.parentElement.parentElement.children[1].value, \'repo-create-acl\', function(repo){ repoSetAllAcl(repo, \'repo-create-acl\', function() { handleSuccess(true, \'ACL correctly applied.\'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
+  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\', function(repo){ repoSetAllAcl(repo, \'repo-create-acl\', function() { handleSuccess(true, \'ACL correctly applied.\'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
   document.getElementById('repo-create-name').focus();
 }
