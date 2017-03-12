@@ -422,6 +422,6 @@ function showRepoCreate() {
   aclelm.innerHTML = '<span>(No ACLs)</span>';
   aclelm.dataset.aclnb = 0;
   aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
-  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(this.parentElement.parentElement.children[1].value, \'repo-create-acl\', function(repo){ repoSetAllAcl(repo, \'repo-create-acl\', function() { handleSuccess(true, \'ACL correctly applied.\'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
+  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\', function(repo){ repoSetAllAcl(repo, \'repo-create-acl\', function() { handleSuccess(true, \'ACL correctly applied.\'); refreshRepolist(); }) });" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
   document.getElementById('repo-create-name').focus();
 }
