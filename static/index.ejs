@@ -58,7 +58,7 @@
   <label for="repo-create-name">Name</label><input type="text" id="repo-create-name" maxlength="84" onkeydown="if (event.keyCode == 13) document.getElementById('repo-create-confirmbutton').click()">
   <div class="acl-container">
     <p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd('repo-create-acl', '', '', true);" title="Add an ACL"> + </button></p>
-    <ul id="repo-create-acl" class="acl-list" data-aclnb="0"><span>(No ACLs)</span></ul>
+    <ul id="repo-create-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>(No ACLs)</span></ul>
   </div>
 </div>
 <footer><p>Created with <svg class="a-beautiful-heart" viewBox="0 0 32 29.6"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://maximelouet.me">Maxime Louet</a> (EPITECH Paris 2021).</p><p>Version <%= version %>.</p><p><a href="https://github.com/maximelouet/blih-web/issues">Bug report</a></p></footer>

@@ -52,7 +52,7 @@ function loader(active) {
     document.documentElement.classList.add('loading');
     document.documentElement.classList.add('act-disabled');
     handleError(false);
-    loaderTimeout = setTimeout(function(){ loader(false); }, 10000);
+    loaderTimeout = setTimeout(function(){ loader(false); }, 20000);
   }
   else
   {
@@ -116,7 +116,7 @@ function repoDelete(repo) {
     if (success && response.hasOwnProperty('message') && response.message == 'Repository deleted')
     {
       hideModal('repo-delete');
-      setTimeout(function(){handleSuccess(true, 'The repository <strong>' + repo + '</strong> has been deleted.')}, 300);
+      setTimeout(function(){handleSuccess(true, 'The repository <strong>' + repo + '</strong> has been deleted.')}, 100);
       refreshRepolist();
     }
     else
@@ -146,10 +146,17 @@ function retrieve(url, resource, data, callback) {
   r.onreadystatechange = function() {
     if (r.readyState == 4) {
       if (callback && typeof(callback) === "function") {
-        if (r.status == 200 || r.status == 404)
-          callback(true, r.status, JSON.parse(r.responseText));
-        else
-          callback(false, r.status, r.responseText);
+        var success = false;
+        var data = r.responseText;
+        if (r.status == 200 || r.status == 404) {
+          var parsed = JSON.parse(data);
+          if (!parsed.hasOwnProperty('ERROR'))
+          {
+            success = true;
+            data = parsed;
+          }
+        }
+        callback(success, r.status, data);
       }
     }
   };
@@ -172,8 +179,8 @@ function repoOpen(name)
   var repoinfoacl = document.getElementById('repo-info-acl-container');
   repoinfo.innerHTML = 'Loading repository info...';
   repoinfoacl.innerHTML = 'Loading ACL...';
-  showModal('repo-info', name, '<button class="btn bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl\', function(){});"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
-  repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading...</span></ul>';
+  showModal('repo-info', name, '<button class="btn bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl\', function(){ handleSuccess(true, \'ACLs applied.\'); });"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+  repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
   repoGetInfo(name, function(success, status, response) {
     if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
     {
@@ -186,7 +193,7 @@ function repoOpen(name)
   repoGetAcl(name, function(success, status, response) {
     if (success)
     {
-      repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0"><span>Loading</span></ul>';
+      repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading</span></ul>';
       if (response.hasOwnProperty('error'))
         document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
       else
@@ -288,7 +295,7 @@ function login() {
   Guser = username;
   Ghashedp = pass.getHash("HEX");
   repoList(function (success, status, response) {
-    if (success && !response.hasOwnProperty('error'))
+    if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
     {
       document.getElementById('logged-in-user').innerHTML = username;
       document.body.classList.add('logged-in');
@@ -304,7 +311,20 @@ function login() {
     {
       Guser = false;
       Ghashedp = false;
-      handleError(true, 'Invalid username/password.');
+      try {
+        var parsed = JSON.parse(response);
+        if (parsed.hasOwnProperty('ERROR'))
+          handleError(true, parsed["ERROR"]);
+        else if (parsed.hasOwnProperty('error'))
+        {
+          if (parsed['error'] == 'Bad token')
+            handleError(true, 'Invalid username/password.');
+          else
+            handleError(true, parsed['error']);
+        }
+      } catch (e) {
+        handleError(true, 'An unknown error has occured.');
+      }
     }
     loader(false)
   });
@@ -318,6 +338,8 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
       aclRootElm.innerHTML = '';
     var li = document.createElement('li');
+    if (intended)
+      li.className = 'draft'; // draft status while not saved
     var name = document.createElement('input');
     name.type = "text";
     if (user)
@@ -388,14 +410,24 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     if (intended)
       name.focus();
 }
+
 function aclRem(aclRootElm, elmToRem) {
     if (parseInt(aclRootElm.dataset.aclnb) <= 0)
       return;
-    aclRootElm.removeChild(elmToRem);
     aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
+    if (elmToRem.className != 'draft')
+    {
+      var acltorem = aclRootElm.dataset.acltorem.split(',');
+      if (acltorem == ',')
+        acltorem = '';
+      acltorem.push(elmToRem.children[0].value);
+      aclRootElm.dataset.acltorem = acltorem.toString();
+    }
+    aclRootElm.removeChild(elmToRem);
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
       aclRootElm.innerHTML = '<span>(No ACLs)</span>';
 }
+
 function getAclPerms(aclSpanElm) {
   var acls = '';
   for (i = 0; i < 3; i++) {
@@ -405,27 +437,67 @@ function getAclPerms(aclSpanElm) {
   return (acls);
 }
 
+
 function repoSetAllAcl(repo, aclRootElmId, callback) {
+  loader(true);
   var aclRootElm = document.getElementById(aclRootElmId);
   var aclnb = parseInt(aclRootElm.dataset.aclnb);
   for (i = 0; i < aclnb - 1; i++) {
-    {
-      repoSetAcl(repo, aclRootElm.children[i].children[0].value, getAclPerms(aclRootElm.children[i].children[1]), null);
-    }
+    repoSetAcl(
+      repo,
+      aclRootElm.children[i].children[0].value,
+      getAclPerms(aclRootElm.children[i].children[1]),
+      function(success, status, response) {
+        if (!success)
+        {
+          callback(false, status, response);
+          loader(false);
+          return;
+        }
+      }
+    );
+    aclRootElm.children[i].className = ''; // reset 'draft' status
   }
-  if (aclnb > 0)
-    repoSetAcl(repo, aclRootElm.children[aclnb - 1].children[0].value, getAclPerms(aclRootElm.children[aclnb - 1].children[1]), function(success, status, response) {
-        if (success)
-          handleSuccess(true, 'ACLs correctly applied.');
-        else
-          handleApiError(status, response);
-        loader(false);
-        callback(success, status, response);
-      });
+  if (aclnb > 0) {
+    repoSetAcl(
+      repo,
+      aclRootElm.children[aclnb - 1].children[0].value,
+      getAclPerms(aclRootElm.children[aclnb - 1].children[1]),
+      function(success, status, response) {
+        if (!success)
+        {
+          callback(false, status, response);
+          loader(false);
+          return;
+        }
+      }
+    );
+    aclRootElm.children[aclnb - 1].className = ''; // reset 'draft' status
+  }
+
+  // handle ACLs to remove
+  var acltorem = aclRootElm.dataset.acltorem.split(',');
+  acltorem.forEach(function(item, index) {
+    repoSetAcl(
+      repo,
+      item,
+      "",
+      function(success, status, response) {
+        if (!success)
+        {
+          callback(false, status, response);
+          loader(false);
+          return;
+        }
+      }
+    );
+  });
+  callback(true, 200, "ACLs applied.");
+  loader(false);
 }
 
 function repoSetAcl(repo, acluser, aclrights, callback) {
-  if (!acluser || !aclrights)
+  if (!acluser)
   {
     handleError(true, "No ACLs specified.");
     return ;
@@ -440,6 +512,7 @@ function showRepoCreate() {
   aclelm.innerHTML = '<span>(No ACLs)</span>';
   aclelm.dataset.aclnb = 0;
   aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
+  aclelm.children[0].className = 'draft';
   showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
   document.getElementById('repo-create-name').focus();
 }
