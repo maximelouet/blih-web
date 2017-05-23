@@ -8,6 +8,33 @@ const modal = new VanillaModal.default({
   onBeforeOpen: function(){infoHandle('hidden', false)}
 });
 
+var decodeEntities = (function() {
+  // this prevents any overhead from creating the object each time
+  var element = document.createElement('div');
+  function decodeHTMLEntities (str) {
+    if(str && typeof str === 'string') {
+      // strip script/html tags
+      str = str.replace(/<script[^>]*>([\S\s]*?)<\/script>/gmi, '');
+      str = str.replace(/<\/?\w(?:[^"'>]|"[^"]*"|'[^']*')*>/gmi, '');
+      element.innerHTML = str;
+      str = element.textContent;
+      element.textContent = '';
+    }
+    return str;
+  }
+  return decodeHTMLEntities;
+})();
+
+function htmlEntities(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escapeQuotes(str) {
+  return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '&apos;');
+}
+function escapeQuotesBack(str) {
+  return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '\\\'');
+}
 
 function switchModal(oldm, newm, newtitle, newact) {
   hideModal(oldm);
@@ -16,7 +43,7 @@ function switchModal(oldm, newm, newtitle, newact) {
 
 function showModal(id, name, actText) {
   var actElm = document.getElementById('modal-act');
-  document.getElementById('modal-title').innerHTML = name;
+  document.getElementById('modal-title').innerHTML = htmlEntities(name);
   if (actText == false) {
     actElm.className = '';
     actElm.innerHTML = '';
@@ -32,7 +59,7 @@ function hideModal(id) {
 }
 
 function checkRepoConfirm(wanted, entered, button) {
-  if (wanted == entered)
+  if (escapeQuotes(wanted) == escapeQuotes(entered).valueOf())
     button.disabled = false;
   else
     button.disabled = true;
@@ -92,7 +119,10 @@ function refreshRepolist() {
       for (repo in response)
       {
         if (response.hasOwnProperty(repo))
-          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
+        {
+          repo = htmlEntities(response[repo]);
+          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+        }
       }
       document.getElementById('repolist').innerHTML = repoList;
     }
@@ -116,7 +146,7 @@ function repoDelete(repo) {
     if (success && response.hasOwnProperty('message') && response.message == 'Repository deleted')
     {
       hideModal('repo-delete');
-      setTimeout(function(){handleSuccess(true, 'The repository <strong>' + repo + '</strong> has been deleted.')}, 100);
+      setTimeout(function(){handleSuccess(true, 'The repository <strong>' + htmlEntities(repo) + '</strong> has been deleted.')}, 100);
       refreshRepolist();
     }
     else
@@ -168,9 +198,18 @@ function retrieve(url, resource, data, callback) {
 
 function promptDelete(repo) {
   document.getElementById('repo-delete-confirmname').value = '';
-  showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); if(document.getElementById(\'repo-delete-confirmname\').value == \'' + repo + '\') { repoDelete(\'' + repo + '\'); } else { handleError(\'Wrong confirmation\') };" disabled>Confirm</button>');
+  showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm</button>');
   document.getElementById('repo-delete-confirmname').focus();
 }
+
+function handleAclDone(success, status, response)
+{
+  if (success)
+    handleSuccess(true, response);
+  else
+    handleApiError(status, response);
+}
+
 
 function repoOpen(name)
 {
@@ -179,13 +218,13 @@ function repoOpen(name)
   var repoinfoacl = document.getElementById('repo-info-acl-container');
   repoinfo.innerHTML = 'Loading repository info...';
   repoinfoacl.innerHTML = 'Loading ACL...';
-  showModal('repo-info', name, '<button class="btn bg-green" onclick="event.preventDefault(); repoSetAllAcl(\'' + name + '\', \'repo-info-acl\', function(){ handleSuccess(true, \'ACLs applied.\'); });"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + name + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+  showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleAclDone);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
   repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
   repoGetInfo(name, function(success, status, response) {
     if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
     {
       var date = new Date(parseInt(response.message['creation_time']) * 1000);
-      repoinfo.innerHTML = 'Created: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + 'UUID: ' + response.message['uuid'];
+      repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
     }
     else
       handleError(true, 'An error occured');
@@ -231,11 +270,12 @@ function repoCreate(name, aclRootElmId) {
         {
           refreshRepolist();
           hideModal('repo-create');
-          handleSuccess(true, 'The repository <strong>' + name + '</strong> has been created with the specified ACLs.');
+          handleSuccess(true, 'The repository <strong>' + htmlEntities(name) + '</strong> has been created with the specified ACLs.');
         }
         else
         {
           refreshRepolist();
+          hideModal('repo-create');
           handleApiError(status, response);
         }
         loader(false);
@@ -250,7 +290,6 @@ function repoCreate(name, aclRootElmId) {
 }
 
 function handleApiError(status, response) {
-  console.log('handleApiError status : ' + status);
   loader(false);
   if (status == 0)
     handleError(true, "An error occured while connecting to the server.");
@@ -278,6 +317,20 @@ function getFormAcl(dataId) {
 }
 
 
+function getDOM(callback)
+{
+  var r = new XMLHttpRequest();
+  r.onreadystatechange = function() {
+    if (r.readyState == 4 && r.status == 200) {
+      document.getElementById('logged-in-dom').innerHTML = r.responseText;
+      callback();
+    }
+    else if (r.readyState == 4)
+      handleError(true, 'An unknown error occured.');
+  };
+  r.open('GET', '/dom');
+  r.send();
+}
 
 function login() {
   loader(true);
@@ -297,15 +350,22 @@ function login() {
   repoList(function (success, status, response) {
     if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
     {
-      document.getElementById('logged-in-user').innerHTML = username;
-      document.body.classList.add('logged-in');
-      var repoList = '';
-      for (repo in response)
-      {
-        if (response.hasOwnProperty(repo))
-          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + response[repo] + '\');"><span>' + response[repo] + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + response[repo] + '\');"><i class="i i-times"></i></button></li>\n';
-      }
-      document.getElementById('repolist').innerHTML = repoList;
+      getDOM(function(){
+
+        document.getElementById('logged-in-user').innerHTML = htmlEntities(username);
+        document.body.classList.add('logged-in');
+        var repoList = '';
+        for (repo in response)
+        {
+          if (response.hasOwnProperty(repo))
+          {
+            repo = htmlEntities(response[repo]);
+            repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+          }
+        }
+        document.getElementById('repolist').innerHTML = repoList;
+
+      });
     }
     else
     {
@@ -342,6 +402,10 @@ function aclAdd(aclRootElmId, user, rights, intended) {
       li.className = 'draft'; // draft status while not saved
     var name = document.createElement('input');
     name.type = "text";
+    if (!intended)
+      name.disabled = true;
+    else if (aclRootElmId != 'repo-create-acl')
+      document.getElementById("save-acl").disabled = false;
     if (user)
     {
       name.placeholder = user;
@@ -372,6 +436,12 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     cb1.value = "r";
     cb2.value = "w";
     cb3.value = "a";
+    if (aclRootElmId != 'repo-create-acl')
+    {
+      cb1.onchange = function(){document.getElementById('save-acl').disabled = false;};
+      cb2.onchange = function(){document.getElementById('save-acl').disabled = false;};
+      cb3.onchange = function(){document.getElementById('save-acl').disabled = false;};
+    }
     if (rights)
     {
       if (rights.indexOf('r') > -1)
@@ -381,9 +451,11 @@ function aclAdd(aclRootElmId, user, rights, intended) {
       if (rights.indexOf('a') > -1)
         cb3.checked = true;
     }
-    var tn1 = document.createTextNode(' r ');
-    var tn2 = document.createTextNode(' w ');
-    var tn3 = document.createTextNode(' a ');
+    else
+      cb1.checked = true;
+    var tn1 = document.createTextNode('r ');
+    var tn2 = document.createTextNode('w ');
+    var tn3 = document.createTextNode('a ');
     label1.appendChild(cb1);
     label2.appendChild(cb2);
     label3.appendChild(cb3);
@@ -422,6 +494,7 @@ function aclRem(aclRootElm, elmToRem) {
         acltorem = '';
       acltorem.push(elmToRem.children[0].value);
       aclRootElm.dataset.acltorem = acltorem.toString();
+      document.getElementById('save-acl').disabled = false;
     }
     aclRootElm.removeChild(elmToRem);
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
@@ -440,10 +513,14 @@ function getAclPerms(aclSpanElm) {
 
 function repoSetAllAcl(repo, aclRootElmId, callback) {
   loader(true);
+  var acted = false;
   var aclRootElm = document.getElementById(aclRootElmId);
   var aclnb = parseInt(aclRootElm.dataset.aclnb);
+
   for (i = 0; i < aclnb - 1; i++) {
-    repoSetAcl(
+    console.log("for, getting " + getAclPerms(aclRootElm.children[aclnb - 1].children[1]) + " for " + aclRootElm.children[aclnb - 1].children[0].value);
+    if (aclRootElm.children[i].children[0].value.length < 1 ||
+      !repoSetAcl(
       repo,
       aclRootElm.children[i].children[0].value,
       getAclPerms(aclRootElm.children[i].children[1]),
@@ -452,14 +529,17 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
         {
           callback(false, status, response);
           loader(false);
-          return;
         }
       }
-    );
+    ))
+      return;
+    acted = true;
     aclRootElm.children[i].className = ''; // reset 'draft' status
   }
   if (aclnb > 0) {
-    repoSetAcl(
+    console.log("aclnb > 0, getting " + getAclPerms(aclRootElm.children[aclnb - 1].children[1]) + " for " + aclRootElm.children[aclnb - 1].children[0].value);
+    if (aclRootElm.children[aclnb - 1].children[0].value.length < 1 ||
+      !repoSetAcl(
       repo,
       aclRootElm.children[aclnb - 1].children[0].value,
       getAclPerms(aclRootElm.children[aclnb - 1].children[1]),
@@ -468,17 +548,18 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
         {
           callback(false, status, response);
           loader(false);
-          return;
         }
       }
-    );
+    ))
+      return;
+    acted = true;
     aclRootElm.children[aclnb - 1].className = ''; // reset 'draft' status
   }
 
   // handle ACLs to remove
   var acltorem = aclRootElm.dataset.acltorem.split(',');
   acltorem.forEach(function(item, index) {
-    repoSetAcl(
+    if (!repoSetAcl(
       repo,
       item,
       "",
@@ -487,23 +568,30 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
         {
           callback(false, status, response);
           loader(false);
-          return;
         }
       }
-    );
+    ))
+      return;
+    acted = true;
   });
+  console.log("repoSetAllAcl: end: RIP RIP RIP");
   callback(true, 200, "ACLs applied.");
+  document.getElementById('save-acl').disabled = true;
   loader(false);
 }
 
 function repoSetAcl(repo, acluser, aclrights, callback) {
-  if (!acluser)
+  if (!acluser || acluser.length == 0)
   {
-    handleError(true, "No ACLs specified.");
-    return ;
+    loader(false);
+    return (false);
   }
-  var repoacl = { acl: aclrights, user: acluser };
-  retrieve('reposetacl', repo, repoacl, callback);
+  else
+  {
+    var repoacl = { acl: aclrights, user: acluser };
+    retrieve('reposetacl', repo, repoacl, callback);
+    return (false);
+  }
 }
 
 function showRepoCreate() {
@@ -511,8 +599,7 @@ function showRepoCreate() {
   document.getElementById('repo-create-name').value = '';
   aclelm.innerHTML = '<span>(No ACLs)</span>';
   aclelm.dataset.aclnb = 0;
-  aclAdd('repo-create-acl', 'ramassage-tek', 'r', false);
-  aclelm.children[0].className = 'draft';
+  aclAdd('repo-create-acl', 'ramassage-tek', 'r', true); // TODO : check
   showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
   document.getElementById('repo-create-name').focus();
 }
