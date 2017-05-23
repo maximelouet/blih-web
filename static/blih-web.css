@@ -28,6 +28,19 @@ footer {
     padding-top: 1rem;
     padding-bottom: 2rem;
 }
+footer a {
+  text-decoration: none!important;
+  color: #4070D0;
+  border-bottom: 2px solid #5080E0;
+}
+footer a:hover {
+  color: #4070D0;
+  border-bottom-color: #1020D0;
+}
+footer a:active, footer a:focus {
+  color: #60A0E0;
+  border-bottom-color: #5080F0;
+}
 .a-beautiful-heart {
   fill: #EF1944;
   width: 1em;
@@ -132,7 +145,7 @@ input:not([type=submit]):not([type=checkbox]) {
     box-shadow: none;
     background: #fff!important;
     outline: none!important;
-    border: .15em solid rgba(0, 0, 0, .3);
+    border: .13em solid rgba(0, 0, 0, .3);
     width: 100%;
 }
 input:not([type=submit]):not([type=checkbox]):focus {
@@ -178,7 +191,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
 }
 .acl-add {
   position: absolute;
-  top: .7em; right: 0;
+  top: .55em; right: 0;
 }
 .acl-add, .acl-rem {
   text-align: center;
@@ -186,9 +199,15 @@ input:not([type=submit]):not([type=checkbox]):focus {
 .acl-rem {
   float: right;
   font-weight: bold;
+  padding: .3em .6em .45em;
+  margin-top: .15em;
 }
 .acl-list li > input[type="text"] {
-    width: calc(90% - 7rem);
+    width: calc(88% - 7.5rem);
+}
+.acl-list li input[disabled] {
+  background: rgba(0, 0, 0, .05)!important;
+  border-color: rgba(0, 0, 0, .05)!important;
 }
 
 
@@ -482,9 +501,11 @@ h3#modal-title {
 }
 :root .acl-list input[type="checkbox"] + span::before
 {
+    margin-right: .1em;
+    margin-left: .2em;
     content: "";
     width: 1.5rem; height: 1.5rem;
-    border: .15em solid rgba(0, 0, 0, .3);
+    border: .1em solid rgba(0, 0, 0, .3);
     text-align: center;
     background: #fff;
 }
@@ -493,6 +514,7 @@ h3#modal-title {
     color: #fff;
     background: #1A9969;
     border-color: #1A9969;
+    border-width: 0;
 }
 :root .acl-list input[type="checkbox"]:disabled + span
 {
@@ -504,13 +526,22 @@ h3#modal-title {
     content: "\2713";
 }
 .acl-rights {
-  margin-left: .2em;
+    margin-left: .2em;
 }
 
 
 
 
 
+@media all and (max-width: 1400px) {
+    header, main, footer {
+        padding-left: 20vw;
+        padding-right: 20vw;
+    }
+    .info-container {
+        width: calc(100% - 20em - 40vw);
+    }
+}
 
 @media all and (max-width: 1200px) {
     header, main, footer {
@@ -521,7 +552,7 @@ h3#modal-title {
         width: calc(100% - 20em - 30vw);
     }
 }
-@media all and (max-width: 800px) {
+@media all and (max-width: 900px) {
     header, main, footer {
         padding-left: 5vw;
         padding-right: 5vw;

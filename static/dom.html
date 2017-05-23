@@ -1,0 +1,16 @@
+<div id="modal-repo-info" class="modal-hider">
+  <p id="repo-info"></p>
+  <div class="acl-container" id="repo-info-acl-container"></div>
+</div>
+<div id="modal-repo-delete" class="modal-hider">
+  <p>Are you sure you want to delete the repository <strong id="repo-delete-name"></strong> ? This action will <strong>delete all the files</strong> in this repository, and <strong>cannot be undone</strong>.</p>
+  <p>Type in the name of the repository to confirm:</p>
+  <input type="text" id="repo-delete-confirmname" onkeydown="if (event.keyCode == 13) document.getElementById('repo-delete-confirmbutton').click()" oninput="checkRepoConfirm(document.getElementById('modal-title').innerHTML, htmlEntities(this.value), document.getElementById('repo-delete-confirmbutton'));">
+</div>
+<div id="modal-repo-create" class="modal-hider">
+  <label for="repo-create-name">Name</label><input type="text" id="repo-create-name" maxlength="84" onkeydown="if (event.keyCode == 13) document.getElementById('repo-create-confirmbutton').click()">
+  <div class="acl-container">
+    <p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd('repo-create-acl', '', '', true);" title="Add an ACL"> + </button></p>
+    <ul id="repo-create-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>(No ACLs)</span></ul>
+  </div>
+</div>

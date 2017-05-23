@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<!-- Maxime 'Saumon' Louet -->
-<html prefix="og: http://ogp.me/ns#" lang="en">
+<!-- Created by Maxime 'Saumon' Louet -->
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>BLIH Web</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=1,user-scalable=yes">
   <meta name="robots" content="noindex,nofollow">
   <link rel="stylesheet" type="text/css" href="/blih-web.css">
@@ -45,23 +44,10 @@
     <div id="modal-act"></div>
   </div>
 </aside>
-<div id="modal-repo-info" class="modal-hider">
-  <p id="repo-info"></p>
-  <div class="acl-container" id="repo-info-acl-container"></div>
-</div>
-<div id="modal-repo-delete" class="modal-hider">
-  <p>Are you sure you want to delete the repository <strong id="repo-delete-name"></strong> ? This action will <strong>delete all the files</strong> in this repository, and <strong>cannot be undone</strong>.</p>
-  <p>Type in the name of the repository to confirm:</p>
-  <input type="text" id="repo-delete-confirmname" onkeydown="if (event.keyCode == 13) document.getElementById('repo-delete-confirmbutton').click()" oninput="checkRepoConfirm(document.getElementById('modal-title').innerHTML, this.value, document.getElementById('repo-delete-confirmbutton'));">
-</div>
-<div id="modal-repo-create" class="modal-hider">
-  <label for="repo-create-name">Name</label><input type="text" id="repo-create-name" maxlength="84" onkeydown="if (event.keyCode == 13) document.getElementById('repo-create-confirmbutton').click()">
-  <div class="acl-container">
-    <p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd('repo-create-acl', '', '', true);" title="Add an ACL"> + </button></p>
-    <ul id="repo-create-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>(No ACLs)</span></ul>
-  </div>
-</div>
-<footer><p>Created with <svg class="a-beautiful-heart" viewBox="0 0 32 29.6"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://maximelouet.me">Maxime Louet</a> (EPITECH Paris 2021).</p><p>Version <%= version %>.</p><p><a href="https://github.com/maximelouet/blih-web/issues">Bug report</a></p></footer>
+
+<div id="logged-in-dom"></div>
+
+<footer><p>Created with <svg class="a-beautiful-heart" style="width: 1em;" viewBox="0 0 32 29.6"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://maximelouet.me">Maxime Louet</a> (EPITECH Paris 2021).</p><p>Version <%= version %>.</p><p><a href="https://github.com/maximelouet/blih-web/issues">Bug report</a></p></footer>
 <script src="/modal.js"></script>
 <script src="/blih-web.js"></script>
 <script src="/meow.js"></script>

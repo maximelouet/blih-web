@@ -1,3 +1,5 @@
+// Maxime Louet - https://github.com/maximelouet/blih-web
+
 var express = require('express')
 var bodyParser = require('body-parser')
 var fs = require('fs')
@@ -11,7 +13,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '0.9.8';
+var VERSION = '0.9.9';
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
 
@@ -30,7 +32,7 @@ app.get('/', function (req, res) {
   })
 })
 
-// BLIH WEB API
+// BLIH Web API
 
 function blih(httpmethod, url, signed_data, sortrepos, res) {
   var options = {
@@ -96,10 +98,13 @@ app.post('/api/reposetacl', function (req, res) {
 })
 
 
-// STATIC FILES
+// Static files
 
 app.get('/blih-web.css', function (req, res) {
-  res.sendFile(__dirname + '/static/blih-web.css')
+  res.sendFile(__dirname + '/static/blih-web.css') // DEV
+})
+app.get('/blih-web.js', function (req, res) {
+  res.sendFile(__dirname + '/static/blih-web.js') // DEV
 })
 app.get('/meow.js', function (req, res) {
   res.sendFile(__dirname + '/static/meow.js')
@@ -107,13 +112,16 @@ app.get('/meow.js', function (req, res) {
 app.get('/modal.js', function (req, res) {
   res.sendFile(__dirname + '/node_modules/vanilla-modal/dist/index.js')
 })
-app.get('/blih-web.js', function (req, res) {
-  res.sendFile(__dirname + '/static/blih-web.js')
+app.get('/dom', function (req, res) {
+  res.sendFile(__dirname + '/static/dom.html')
 })
 
 app.use(function (req, res, next) {
   res.status(404).send('404')
 });
+
+
+// Main server
 
 app.listen(1337, function () {
   console.log('Started BLIH Web on port 1337.')
