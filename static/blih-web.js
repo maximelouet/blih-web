@@ -174,7 +174,7 @@ function retrieve(url, resource, data, callback) {
     signeddata['signature'] = signature.getHMAC("HEX");
     if (resource == false)
         resource = 'kappa';
-    var params = 'resource=' + resource + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
+    var params = 'resource=' + encodeURIComponent(resource) + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
     var r = new XMLHttpRequest();
     r.onreadystatechange = function() {
         if (r.readyState == 4) {

@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.0.2'
+var VERSION = '1.1.0'
 
 
 app.get('/', function (req, res) {
