@@ -48,6 +48,13 @@ footer a:active, footer a:focus {
   width: 1em;
   animation: love 5s ease infinite;
 }
+footer p.log-info {
+  display: inline-block;
+  max-width: 400px;
+  font-size: .7em;
+  margin-top: .5em;
+  margin-bottom: .4em;
+}
 
 @keyframes love {
   0% { transform: scale(1); }
