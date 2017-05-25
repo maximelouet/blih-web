@@ -1,6 +1,6 @@
 {
   "name": "blih-web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Web interface for Epitech BLIH",
   "main": "server.js",
   "dependencies": {
