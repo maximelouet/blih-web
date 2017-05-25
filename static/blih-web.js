@@ -1,367 +1,365 @@
+// Maxime Louet - https://github.com/maximelouet/blih-web
+// MIT License
+
 var Guser = false;
 var Ghashedp = false;
 var actDisabled = false;
 var loaderTimeout = false;
 
 const modal = new VanillaModal.default({
-  loadClass: 'modal-ok',
-  onBeforeOpen: function(){infoHandle('hidden', false)}
+    loadClass: 'modal-ok',
+    onBeforeOpen: function(){infoHandle('hidden', false)}
 });
 
 var decodeEntities = (function() {
-  // this prevents any overhead from creating the object each time
-  var element = document.createElement('div');
-  function decodeHTMLEntities (str) {
-    if(str && typeof str === 'string') {
-      // strip script/html tags
-      str = str.replace(/<script[^>]*>([\S\s]*?)<\/script>/gmi, '');
-      str = str.replace(/<\/?\w(?:[^"'>]|"[^"]*"|'[^']*')*>/gmi, '');
-      element.innerHTML = str;
-      str = element.textContent;
-      element.textContent = '';
+    // this prevents any overhead from creating the object each time
+    var element = document.createElement('div');
+    function decodeHTMLEntities (str) {
+        if (str && typeof str === 'string') {
+            // strip script/html tags
+            str = str.replace(/<script[^>]*>([\S\s]*?)<\/script>/gmi, '');
+            str = str.replace(/<\/?\w(?:[^"'>]|"[^"]*"|'[^']*')*>/gmi, '');
+            element.innerHTML = str;
+            str = element.textContent;
+            element.textContent = '';
+        }
+        return str;
     }
-    return str;
-  }
-  return decodeHTMLEntities;
+    return decodeHTMLEntities;
 })();
 
 function htmlEntities(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function escapeQuotes(str) {
-  return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '&apos;');
+    return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '&apos;');
 }
 function escapeQuotesBack(str) {
-  return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '\\\'');
+    return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '\\\'');
 }
 
 function switchModal(oldm, newm, newtitle, newact) {
-  hideModal(oldm);
-  setTimeout(function(){showModal(newm, newtitle, newact)}, 300);
+    hideModal(oldm);
+    setTimeout(function(){showModal(newm, newtitle, newact)}, 300);
 }
 
 function showModal(id, name, actText) {
-  var actElm = document.getElementById('modal-act');
-  document.getElementById('modal-title').innerHTML = htmlEntities(name);
-  if (actText == false) {
-    actElm.className = '';
-    actElm.innerHTML = '';
-  }
-  else {
-    actElm.className = 'shown';
-    actElm.innerHTML = actText;
-  }
-  modal.open('#modal-' + id);
+    var actElm = document.getElementById('modal-act');
+    document.getElementById('modal-title').innerHTML = htmlEntities(name);
+    if (actText == false) {
+        actElm.className = '';
+        actElm.innerHTML = '';
+    }
+    else {
+        actElm.className = 'shown';
+        actElm.innerHTML = actText;
+    }
+modal.open('#modal-' + id);
 }
 function hideModal(id) {
-  modal.close('#modal-' + id);
+    modal.close('#modal-' + id);
 }
 
 function checkRepoConfirm(wanted, entered, button) {
-  if (escapeQuotes(wanted) == escapeQuotes(entered).valueOf())
-    button.disabled = false;
-  else
-    button.disabled = true;
+    if (escapeQuotes(wanted) == escapeQuotes(entered).valueOf())
+        button.disabled = false;
+    else
+        button.disabled = true;
 }
 
 function enableAct() {
-  if (!actDisabled) {
-    document.documentElement.classList.remove('act-disabled');
-  }
+    if (!actDisabled) {
+        document.documentElement.classList.remove('act-disabled');
+    }
 }
 
 function loader(active) {
-  clearTimeout(loaderTimeout);
-  if (active)
-  {
-    actDisabled = true;
-    document.documentElement.classList.add('loading');
-    document.documentElement.classList.add('act-disabled');
-    handleError(false);
-    loaderTimeout = setTimeout(function(){ loader(false); }, 20000);
-  }
-  else
-  {
-    actDisabled = false;
-    document.documentElement.classList.remove('loading');
-    setTimeout(enableAct, 200);
     clearTimeout(loaderTimeout);
-  }
+    if (active)
+    {
+        actDisabled = true;
+        document.documentElement.classList.add('loading');
+        document.documentElement.classList.add('act-disabled');
+        handleError(false);
+        loaderTimeout = setTimeout(function(){ loader(false); }, 10000);
+    }
+    else
+    {
+        actDisabled = false;
+        document.documentElement.classList.remove('loading');
+        setTimeout(enableAct, 200);
+        clearTimeout(loaderTimeout);
+    }
 }
 
 function infoHandle(cclass, ccontent) {
     var container = document.getElementById('info-container');
     container.className = 'info-container ' + cclass;
     if (ccontent)
-      container.innerHTML = ccontent;
+        container.innerHTML = ccontent;
 }
 
 function handleError(open, msg) {
-  if (open)
-    infoHandle('bg-red', msg);
-  else
-    infoHandle('hidden', false);
+    if (open)
+        infoHandle('bg-red', msg);
+    else
+        infoHandle('hidden', false);
 }
 
 function handleSuccess(open, msg) {
-  if (open)
-    infoHandle('bg-green', msg);
-  else
-    infoHandle('hidden', false);
+    if (open)
+        infoHandle('bg-green', msg);
+    else
+        infoHandle('hidden', false);
 }
 
 function refreshRepolist() {
-  repoList(function (success, status, response) {
-    if (success && !response.hasOwnProperty('error'))
-    {
-      var repoList = '';
-      for (repo in response)
-      {
-        if (response.hasOwnProperty(repo))
+    repoList(function (success, status, response) {
+        if (success && !response.hasOwnProperty('error'))
         {
-          repo = htmlEntities(response[repo]);
-          repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+            var repoList = '';
+            for (repo in response)
+            {
+                if (response.hasOwnProperty(repo))
+                {
+                    repo = htmlEntities(response[repo]);
+                    repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+                }
+            }
+            document.getElementById('repolist').innerHTML = repoList;
         }
-      }
-      document.getElementById('repolist').innerHTML = repoList;
-    }
-    else
-      handleError(true, 'An error occured.');
-    loader(false)
-  });
+        else
+            handleError(true, 'An error occured.');
+        loader(false)
+    });
 }
 
 function repoList(callback) {
-  retrieve('repolist', false, false, callback);
+    retrieve('repolist', false, false, callback);
 }
 function repoGetAcl(repo, callback) {
-  retrieve('repogetacl', repo, false, callback);
+    retrieve('repogetacl', repo, false, callback);
 }
 function repoGetInfo(repo, callback) {
-  retrieve('repogetinfo', repo, false, callback);
+    retrieve('repogetinfo', repo, false, callback);
 }
 function repoDelete(repo) {
-  retrieve('repodel', repo, false, function (success, status, response) {
-    if (success && response.hasOwnProperty('message') && response.message == 'Repository deleted')
-    {
-      hideModal('repo-delete');
-      setTimeout(function(){handleSuccess(true, 'The repository <strong>' + htmlEntities(repo) + '</strong> has been deleted.')}, 100);
-      refreshRepolist();
-    }
-    else
-    {
-      handleError(true, 'An error occured while trying to delete the repository.');
-    }
-    loader(false);
-  });
+    retrieve('repodel', repo, false, function (success, status, response) {
+        if (success && response.hasOwnProperty('message') && response.message == 'Repository deleted')
+        {
+            hideModal('repo-delete');
+            setTimeout(function(){handleSuccess(true, 'The repository <strong>' + htmlEntities(repo) + '</strong> has been deleted.')}, 100);
+            refreshRepolist();
+        }
+        else
+        {
+            handleError(true, 'An error occured while trying to delete the repository.');
+        }
+        loader(false);
+    });
 }
 
 function retrieve(url, resource, data, callback) {
-  loader(true);
-  var signeddata = {user: Guser};
-  var signature = new jsSHA("SHA-512", "TEXT");
-  signature.setHMACKey(Ghashedp, "TEXT");
-  signature.update(Guser);
-  if (data != false)
-  {
-    signeddata['data'] = data;
-    signature.update(JSON.stringify(data, null, 4));
-  }
-  signeddata['signature'] = signature.getHMAC("HEX");
-  if (resource == false)
-    resource = 'kappa';
-  var params = 'resource=' + resource + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
-  var r = new XMLHttpRequest();
-  r.onreadystatechange = function() {
-    if (r.readyState == 4) {
-      if (callback && typeof(callback) === "function") {
-        var success = false;
-        var data = r.responseText;
-        if (r.status == 200 || r.status == 404) {
-          var parsed = JSON.parse(data);
-          if (!parsed.hasOwnProperty('ERROR'))
-          {
-            success = true;
-            data = parsed;
-          }
-        }
-        callback(success, r.status, data);
-      }
+    loader(true);
+    var signeddata = {user: Guser};
+    var signature = new jsSHA("SHA-512", "TEXT");
+    signature.setHMACKey(Ghashedp, "TEXT");
+    signature.update(Guser);
+    if (data != false)
+    {
+        signeddata['data'] = data;
+        signature.update(JSON.stringify(data, null, 4));
     }
-  };
-  r.open('POST', '/api/' + url);
-  r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-  r.send(params);
+    signeddata['signature'] = signature.getHMAC("HEX");
+    if (resource == false)
+        resource = 'kappa';
+    var params = 'resource=' + resource + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
+    var r = new XMLHttpRequest();
+    r.onreadystatechange = function() {
+        if (r.readyState == 4) {
+            if (callback && typeof(callback) === "function") {
+                var success = false;
+                var data = r.responseText;
+                if (r.status == 200 || r.status == 404) {
+                    var parsed = JSON.parse(data);
+                    if (!parsed.hasOwnProperty('ERROR'))
+                    {
+                        success = true;
+                        data = parsed;
+                    }
+                }
+                callback(success, r.status, data);
+            }
+        }
+    };
+    r.open('POST', '/api/' + url);
+    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+    r.send(params);
 }
 
 
 function promptDelete(repo) {
-  document.getElementById('repo-delete-confirmname').value = '';
-  showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm</button>');
-  document.getElementById('repo-delete-confirmname').focus();
+    document.getElementById('repo-delete-confirmname').value = '';
+    showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm</button>');
+    document.getElementById('repo-delete-confirmname').focus();
 }
 
-function handleAclDone(success, status, response)
-{
-  if (success)
-    handleSuccess(true, response);
-  else
-    handleApiError(status, response);
-}
-
-
-function repoOpen(name)
-{
-  loader(true);
-  var repoinfo = document.getElementById('repo-info');
-  var repoinfoacl = document.getElementById('repo-info-acl-container');
-  repoinfo.innerHTML = 'Loading repository info...';
-  repoinfoacl.innerHTML = 'Loading ACL...';
-  showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleAclDone);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
-  repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
-  repoGetInfo(name, function(success, status, response) {
-    if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
-    {
-      var date = new Date(parseInt(response.message['creation_time']) * 1000);
-      repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
-    }
-    else
-      handleError(true, 'An error occured');
-  });
-  repoGetAcl(name, function(success, status, response) {
+function handleSaveAcl(success) {
     if (success)
-    {
-      repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading</span></ul>';
-      if (response.hasOwnProperty('error'))
-        document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
-      else
-      {
-        for (key in response)
+        handleSuccess(true, "The specified ACLs have been applied.");
+}
+
+
+function repoOpen(name) {
+    loader(true);
+    var repoinfo = document.getElementById('repo-info');
+    var repoinfoacl = document.getElementById('repo-info-acl-container');
+    repoinfo.innerHTML = 'Loading repository info...';
+    repoinfoacl.innerHTML = 'Loading ACL...';
+    showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+    repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
+    repoGetInfo(name, function(success, status, response) {
+        if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
         {
-          if (response.hasOwnProperty(key))
-            aclAdd('repo-info-acl', key, response[key], false);
+            var date = new Date(parseInt(response.message['creation_time']) * 1000);
+            repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
         }
-      }
-      loader(false);
-    }
-    else
-      handleApiError(status, response);
-  });
+        else
+            handleError(true, 'An error occured');
+    });
+    repoGetAcl(name, function(success, status, response) {
+        if (success)
+        {
+            repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading</span></ul>';
+            if (response.hasOwnProperty('error'))
+                document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
+            else
+            {
+                for (key in response)
+                {
+                    if (response.hasOwnProperty(key))
+                        aclAdd('repo-info-acl', key, response[key], false);
+                }
+            }
+            loader(false);
+        }
+        else
+            handleApiError(status, response);
+    });
 }
 
 function repoCreate(name, aclRootElmId) {
-  if (!name)
-  {
-    handleError(true, 'The name cannot be empty!');
-    return;
-  }
-  if (name.length > 84)
-  {
-    handleError(true, 'The name cannot exceed 84 characters!');
-    return;
-  }
-  var repoinfo = { name: name, type: 'git' };
-  retrieve('repocreate', false, repoinfo, function(success, status, response) {
-    if (success)
+    if (!name)
     {
-      repoSetAllAcl(name, aclRootElmId, function(success, status, response) {
+        handleError(true, 'The name cannot be empty!');
+        return;
+    }
+    if (name.length > 84)
+    {
+        handleError(true, 'The name cannot exceed 84 characters!');
+        return;
+    }
+    var repoinfo = { name: name, type: 'git' };
+    retrieve('repocreate', false, repoinfo, function(success, status, response) {
         if (success)
         {
-          refreshRepolist();
-          hideModal('repo-create');
-          handleSuccess(true, 'The repository <strong>' + htmlEntities(name) + '</strong> has been created with the specified ACLs.');
+            repoSetAllAcl(name, aclRootElmId, function(success) {
+                if (success)
+                {
+                    refreshRepolist();
+                    hideModal('repo-create');
+                    handleSuccess(true, 'The repository <strong>' + htmlEntities(name) + '</strong> has been created with the specified ACLs.');
+                }
+            });
         }
         else
         {
-          refreshRepolist();
-          hideModal('repo-create');
-          handleApiError(status, response);
+            handleApiError(status, response);
+            loader(false);
         }
-        loader(false);
-      });
-    }
-    else
-    {
-      handleApiError(status, response);
-      loader(false);
-    }
-  });
+    });
 }
 
 function handleApiError(status, response) {
-  loader(false);
-  if (status == 0)
-    handleError(true, "An error occured while connecting to the server.");
-  else
-  {
-    response = JSON.parse(response);
-    if (response.hasOwnProperty('error'))
-      handleError(true, response.error);
-    else if (response.hasOwnProperty('message'))
-      handleError(true, response.message);
+    loader(false);
+    if (status == 0)
+        handleError(true, "An error occured while connecting to the server.");
     else
-      handleError(true, 'An unknown error has occured.');
-  }
+    {
+        try {
+            response = JSON.parse(response);
+            if (response.hasOwnProperty('error'))
+                handleError(true, response.error);
+            else if (response.hasOwnProperty('message'))
+                handleError(true, response.message);
+            else
+                handleError(true, 'An unknown error has occured.');
+        }
+        catch (err) {
+            console.log(Error("RIP RIP RIP RIP"));
+            handleError(true, "An unknown error has occured.");
+        }
+    }
 }
 
 function getFormAcl(dataId) {
-  var checkboxes = document.getElementsByName(dataId + '-perm');
-  var checked = [];
-  for (var i=0; i<checkboxes.length; i++) {
-    if (checkboxes[i].checked) {
-      checked.push(checkboxes[i].value);
+    var checkboxes = document.getElementsByName(dataId + '-perm');
+    var checked = [];
+    for (var i=0; i<checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            checked.push(checkboxes[i].value);
+        }
     }
-  }
-  return checked.join('');
+    return checked.join('');
 }
 
 
 function getDOM(callback)
 {
-  var r = new XMLHttpRequest();
-  r.onreadystatechange = function() {
+    var r = new XMLHttpRequest();
+    r.onreadystatechange = function() {
     if (r.readyState == 4 && r.status == 200) {
-      document.getElementById('logged-in-dom').innerHTML = r.responseText;
-      callback();
+        document.getElementById('logged-in-dom').innerHTML = r.responseText;
+        callback();
     }
     else if (r.readyState == 4)
-      handleError(true, 'An unknown error occured.');
-  };
-  r.open('GET', '/dom');
-  r.send();
+        handleError(true, 'An unknown error occured.');
+    };
+    r.open('GET', '/dom');
+    r.send();
 }
 
 function login() {
-  loader(true);
-  handleError(false);
-  var username = document.getElementById('login-user').value;
-  var password = document.getElementById('login-pass').value;
-  if (username.length < 5 || password.length < 5)
-  {
-    handleError(true, 'Invalid username/password.');
-    loader(false);
-    return;
-  }
-  var pass = new jsSHA("SHA-512", "TEXT");
-  pass.update(password);
-  Guser = username;
-  Ghashedp = pass.getHash("HEX");
-  repoList(function (success, status, response) {
+    loader(true);
+    handleError(false);
+    var username = document.getElementById('login-user').value;
+    var password = document.getElementById('login-pass').value;
+    if (username.length < 5 || password.length < 5)
+    {
+        handleError(true, 'Invalid username/password.');
+        loader(false);
+        return;
+    }
+    var pass = new jsSHA("SHA-512", "TEXT");
+    pass.update(password);
+    Guser = username;
+    Ghashedp = pass.getHash("HEX");
+    repoList(function (success, status, response) {
     if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
     {
-      getDOM(function(){
+        getDOM(function(){
 
         document.getElementById('logged-in-user').innerHTML = htmlEntities(username);
         document.body.classList.add('logged-in');
         var repoList = '';
         for (repo in response)
         {
-          if (response.hasOwnProperty(repo))
-          {
-            repo = htmlEntities(response[repo]);
-            repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
-          }
+            if (response.hasOwnProperty(repo))
+            {
+                repo = htmlEntities(response[repo]);
+                repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+            }
         }
         document.getElementById('repolist').innerHTML = repoList;
 
@@ -369,51 +367,56 @@ function login() {
     }
     else
     {
-      Guser = false;
-      Ghashedp = false;
-      try {
-        var parsed = JSON.parse(response);
-        if (parsed.hasOwnProperty('ERROR'))
-          handleError(true, parsed["ERROR"]);
-        else if (parsed.hasOwnProperty('error'))
-        {
-          if (parsed['error'] == 'Bad token')
-            handleError(true, 'Invalid username/password.');
-          else
-            handleError(true, parsed['error']);
+        Guser = false;
+        Ghashedp = false;
+        try {
+            var parsed = JSON.parse(response);
+            if (parsed.hasOwnProperty('ERROR'))
+                handleError(true, parsed["ERROR"]);
+            else if (parsed.hasOwnProperty('error'))
+            {
+              if (parsed['error'] == 'Bad token')
+                handleError(true, 'Invalid username/password.');
+              else
+                handleError(true, parsed['error']);
+            }
+        } catch (e) {
+            handleError(true, 'An unknown error has occured.');
         }
-      } catch (e) {
-        handleError(true, 'An unknown error has occured.');
-      }
     }
-    loader(false)
-  });
+    loader(false);
+    });
+}
+
+function resetSaveAcl() {
+    document.getElementById('save-acl').disabled = false;
+    handleError(false, false);
 }
 
 
 function aclAdd(aclRootElmId, user, rights, intended) {
     var aclRootElm = document.getElementById(aclRootElmId);
     if (parseInt(aclRootElm.dataset.aclnb) + 1 > 7)
-      return ;
+        return ;
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
-      aclRootElm.innerHTML = '';
+        aclRootElm.innerHTML = '';
     var li = document.createElement('li');
     if (intended)
-      li.className = 'draft'; // draft status while not saved
+        li.className = 'draft'; // draft status while not saved
     var name = document.createElement('input');
     name.type = "text";
     if (!intended)
-      name.disabled = true;
+        name.disabled = true;
     else if (aclRootElmId != 'repo-create-acl')
-      document.getElementById("save-acl").disabled = false;
+        document.getElementById("save-acl").disabled = false;
     if (user)
     {
-      name.placeholder = user;
-      name.value = user;
+        name.placeholder = user;
+        name.value = user;
     }
     else
     {
-      name.placeholder = "User";
+        name.placeholder = "User";
     }
     name.maxlength = 84;
     var span = document.createElement('span');
@@ -438,21 +441,21 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     cb3.value = "a";
     if (aclRootElmId != 'repo-create-acl')
     {
-      cb1.onchange = function(){document.getElementById('save-acl').disabled = false;};
-      cb2.onchange = function(){document.getElementById('save-acl').disabled = false;};
-      cb3.onchange = function(){document.getElementById('save-acl').disabled = false;};
+        cb1.onchange = resetSaveAcl;
+        cb2.onchange = resetSaveAcl;
+        cb3.onchange = resetSaveAcl;
     }
     if (rights)
     {
-      if (rights.indexOf('r') > -1)
-        cb1.checked = true;
-      if (rights.indexOf('w') > -1)
-        cb2.checked = true;
-      if (rights.indexOf('a') > -1)
-        cb3.checked = true;
+        if (rights.indexOf('r') > -1)
+            cb1.checked = true;
+        if (rights.indexOf('w') > -1)
+            cb2.checked = true;
+        if (rights.indexOf('a') > -1)
+            cb3.checked = true;
     }
     else
-      cb1.checked = true;
+        cb1.checked = true;
     var tn1 = document.createTextNode('r ');
     var tn2 = document.createTextNode('w ');
     var tn3 = document.createTextNode('a ');
@@ -480,117 +483,135 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     aclRootElm.appendChild(li);
     aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) + 1;
     if (intended)
-      name.focus();
+        name.focus();
 }
 
 function aclRem(aclRootElm, elmToRem) {
     if (parseInt(aclRootElm.dataset.aclnb) <= 0)
-      return;
+        return;
     aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
     if (elmToRem.className != 'draft')
     {
-      var acltorem = aclRootElm.dataset.acltorem.split(',');
-      if (acltorem == ',')
-        acltorem = '';
-      acltorem.push(elmToRem.children[0].value);
-      aclRootElm.dataset.acltorem = acltorem.toString();
-      document.getElementById('save-acl').disabled = false;
+        var acltorem = aclRootElm.dataset.acltorem.split(',');
+        if (acltorem == ',')
+            acltorem = '';
+        acltorem.push(elmToRem.children[0].value);
+        aclRootElm.dataset.acltorem = acltorem.toString();
+        resetSaveAcl();
     }
     aclRootElm.removeChild(elmToRem);
     if (parseInt(aclRootElm.dataset.aclnb) == 0)
-      aclRootElm.innerHTML = '<span>(No ACLs)</span>';
+        aclRootElm.innerHTML = '<span>(No ACLs)</span>';
 }
 
 function getAclPerms(aclSpanElm) {
-  var acls = '';
-  for (i = 0; i < 3; i++) {
-    if (aclSpanElm.children[i].children[0].checked == true)
-      acls += aclSpanElm.children[i].children[0].value;
-  }
-  return (acls);
+    var acls = '';
+    for (i = 0; i < 3; i++) {
+        if (aclSpanElm.children[i].children[0].checked == true)
+            acls += aclSpanElm.children[i].children[0].value;
+    }
+    return (acls);
 }
 
 
 function repoSetAllAcl(repo, aclRootElmId, callback) {
-  loader(true);
-  var acted = false;
-  var aclRootElm = document.getElementById(aclRootElmId);
-  var aclnb = parseInt(aclRootElm.dataset.aclnb);
 
-  for (i = 0; i < aclnb - 1; i++) {
-    console.log("for, getting " + getAclPerms(aclRootElm.children[aclnb - 1].children[1]) + " for " + aclRootElm.children[aclnb - 1].children[0].value);
-    if (aclRootElm.children[i].children[0].value.length < 1 ||
-      !repoSetAcl(
-      repo,
-      aclRootElm.children[i].children[0].value,
-      getAclPerms(aclRootElm.children[i].children[1]),
-      function(success, status, response) {
-        if (!success)
-        {
-          callback(false, status, response);
-          loader(false);
-        }
-      }
-    ))
-      return;
-    acted = true;
-    aclRootElm.children[i].className = ''; // reset 'draft' status
-  }
-  if (aclnb > 0) {
-    console.log("aclnb > 0, getting " + getAclPerms(aclRootElm.children[aclnb - 1].children[1]) + " for " + aclRootElm.children[aclnb - 1].children[0].value);
-    if (aclRootElm.children[aclnb - 1].children[0].value.length < 1 ||
-      !repoSetAcl(
-      repo,
-      aclRootElm.children[aclnb - 1].children[0].value,
-      getAclPerms(aclRootElm.children[aclnb - 1].children[1]),
-      function(success, status, response) {
-        if (!success)
-        {
-          callback(false, status, response);
-          loader(false);
-        }
-      }
-    ))
-      return;
-    acted = true;
-    aclRootElm.children[aclnb - 1].className = ''; // reset 'draft' status
-  }
+    let rsacPromise = new Promise( (resolve, reject) => {
 
-  // handle ACLs to remove
-  var acltorem = aclRootElm.dataset.acltorem.split(',');
-  acltorem.forEach(function(item, index) {
-    if (!repoSetAcl(
-      repo,
-      item,
-      "",
-      function(success, status, response) {
-        if (!success)
-        {
-          callback(false, status, response);
-          loader(false);
+        loader(true);
+        var aclRootElm = document.getElementById(aclRootElmId);
+        var aclnb = parseInt(aclRootElm.dataset.aclnb);
+        var acltorem = aclRootElm.dataset.acltorem.split(',');
+        var acltoremnb = acltorem.length - 1;
+
+        if (aclnb == 0 && acltoremnb == 0)
+            resolve(aclRootElmId);
+
+        // handle ACLs to update/set
+        for (iaclset = 0; iaclset < aclnb; iaclset++) {
+
+            var curindex = iaclset;
+            repoSetAcl(
+                repo,
+                aclRootElm.children[iaclset].children[0].value,
+                getAclPerms(aclRootElm.children[iaclset].children[1]),
+                function(success, status, response) {
+                    if (success)
+                    {
+                        aclRootElm.children[curindex].className = ''; // reset 'draft' status
+                        aclRootElm.children[curindex].children[0].disabled = true;
+                    }
+                    if (!success)
+                        reject([status, response, aclRootElmId]);
+                    else if (curindex == aclnb - 1 && acltoremnb == 0)
+                        resolve(aclRootElmId);
+                }
+            );
         }
-      }
-    ))
-      return;
-    acted = true;
-  });
-  console.log("repoSetAllAcl: end: RIP RIP RIP");
-  callback(true, 200, "ACLs applied.");
-  document.getElementById('save-acl').disabled = true;
-  loader(false);
+
+
+        // handle ACLs to remove
+        for (iaclrem = 1; iaclrem <= acltoremnb; iaclrem++) {
+            var curindex = iaclrem;
+
+            repoSetAcl(
+                repo,
+                acltorem[iaclrem],
+                "",
+                function(success, status, response) {
+                    if (!success)
+                        reject([status, response, aclRootElmId]);
+                    else if (curindex == acltoremnb)
+                        resolve(aclRootElmId);
+                }
+            );
+        };
+    });
+
+
+    rsacPromise.then(
+        function(aclRootElmId) {
+            if (aclRootElmId != 'repo-create-acl')
+                document.getElementById('save-acl').disabled = true;
+            loader(false);
+            callback(true);
+        })
+    .catch(
+        // Log the rejection reason
+       (reason) => {
+            loader(false);
+            if (Array.isArray(reason))
+            {
+                if (reason[2] != 'repo-create-acl')
+                    document.getElementById('save-acl').disabled = false;
+                else
+                {
+                    refreshRepolist();
+                    hideModal('repo-create');
+                    refreshRepolist();
+                }
+
+                if (reason[0] == 99)
+                    handleError(true, reason[1]);
+                else
+                    handleApiError(reason[0], reason[1]);
+            }
+            else
+                handleError(true, reason);
+            callback(false);
+        });
+
 }
 
 function repoSetAcl(repo, acluser, aclrights, callback) {
+  var status = true;
+
   if (!acluser || acluser.length == 0)
-  {
-    loader(false);
-    return (false);
-  }
+    callback(false, 99, "Invalid ACL user.");
   else
   {
     var repoacl = { acl: aclrights, user: acluser };
     retrieve('reposetacl', repo, repoacl, callback);
-    return (false);
   }
 }
 
