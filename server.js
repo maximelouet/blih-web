@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.2.3'
+var VERSION = '1.3.0'
 
 
 app.get('/', function (req, res) {
@@ -81,7 +81,7 @@ app.post('/api/*', function (req, res, next) {
     if (!req.body.resource || !req.body.signed_data)
     {
         console.log('Error: invalid client parameters (body).')
-        res.status(400).send('{"ERROR":"Invalid parameters."}')
+        res.status(400).send('{"ERROR":"Invalid parameters (body)."}')
     }
     else
         next()
