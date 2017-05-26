@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.3.0'
+var VERSION = '1.4.0'
 
 
 app.get('/', function (req, res) {
@@ -123,6 +123,9 @@ app.get('/modal.js', function (req, res) {
 })
 app.get('/dom', function (req, res) {
     res.sendFile(__dirname + '/static/dom.html')
+})
+app.get('/blih.py', function (req, res) {
+    res.sendFile(__dirname + '/static/blih.py')
 })
 
 app.use(function (req, res, next) {
