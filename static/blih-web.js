@@ -570,15 +570,14 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
 
 
     rsacPromise.then(
-        function(aclRootElmId) {
+        (aclRootElmId) => {
             if (aclRootElmId != 'repo-create-acl')
                 document.getElementById('save-acl').disabled = true;
             loader(false);
             callback(true);
         })
     .catch(
-        // Log the rejection reason
-       (reason) => {
+        (reason) => {
             loader(false);
             if (Array.isArray(reason))
             {
