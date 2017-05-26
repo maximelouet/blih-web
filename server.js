@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.2.2'
+var VERSION = '1.2.3'
 
 
 app.get('/', function (req, res) {
@@ -28,6 +28,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
     try {
         body = JSON.parse(signed_data)
     } catch(e) {
+        console.log('Error: invalid client parameters (signed data).')
         res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
         return;
     }
@@ -70,8 +71,8 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
         }
         else
         {
-            res.send('{"ERROR":"Request to BLIH server failed."}')
             console.log('Error: request to BLIH server failed.')
+            res.status(500).send('{"ERROR":"Request to BLIH server failed."}')
         }
     })
 }
@@ -79,7 +80,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
 app.post('/api/*', function (req, res, next) {
     if (!req.body.resource || !req.body.signed_data)
     {
-        console.log('Error: invalid parameters for the API.')
+        console.log('Error: invalid client parameters (body).')
         res.status(400).send('{"ERROR":"Invalid parameters."}')
     }
     else
