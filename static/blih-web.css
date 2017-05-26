@@ -564,7 +564,7 @@ h3#modal-title {
         padding-right: 15vw;
     }
     .info-container {
-        width: calc(100% - 20em - 30vw);
+        width: calc(100% - 15em - 25vw);
     }
 }
 @media all and (max-width: 900px) {
@@ -573,7 +573,7 @@ h3#modal-title {
         padding-right: 11vw;
     }
     .info-container {
-        width: calc(100% - 20em - 10vw);
+        width: 75vw;
     }
     section#login {
         padding-left: 13vw;
@@ -588,6 +588,9 @@ h3#modal-title {
     section#login {
         padding-left: 11vw;
         padding-right: 11vw;
+    }
+    .info-container {
+        width: 83vw;
     }
 }
 @media all and (max-width: 500px) {
@@ -615,7 +618,11 @@ h3#modal-title {
     }
     .modal-inner {
         font-size: .9em;
-        width: 97%!important;
+        width: 95%!important;
+        margin-left: -.2em;
+    }
+    .info-container {
+        width: 87vw;
     }
 
 }
