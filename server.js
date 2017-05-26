@@ -24,6 +24,13 @@ app.get('/', function (req, res) {
 // BLIH Web API
 
 function blih(httpmethod, url, signed_data, sortrepos, res) {
+    var body
+    try {
+        body = JSON.parse(signed_data)
+    } catch(e) {
+        res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
+    }
+
     var options = {
         headers: {
             'Accept-Encoding': 'identity',
@@ -72,7 +79,7 @@ app.post('/api/*', function (req, res, next) {
     if (!req.body.resource || !req.body.signed_data)
     {
         console.log('Error: invalid parameters for the API.')
-        res.send('{"ERROR":"Invalid parameters"}')
+        res.status(400).send('{"ERROR":"Invalid parameters."}')
     }
     else
         next()
