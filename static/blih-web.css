@@ -156,7 +156,7 @@ input {
 }
 input:not([type=submit]):not([type=checkbox]) {
     margin: 0 0 .5em 0;
-    padding: .45em .5em .5em;
+    padding: .5em;
     box-shadow: none;
     background: #fff!important;
     outline: none!important;
