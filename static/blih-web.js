@@ -604,23 +604,25 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
 }
 
 function repoSetAcl(repo, acluser, aclrights, callback) {
-  var status = true;
+    var status = true;
 
-  if (!acluser || acluser.length == 0)
-    callback(false, 99, "Invalid ACL user.");
-  else
-  {
-    var repoacl = { acl: aclrights, user: acluser };
-    retrieve('reposetacl', repo, repoacl, callback);
-  }
+    if (!acluser || acluser.length == 0)
+        callback(false, 99, "Invalid ACL user.");
+    else if (acluser == Guser)
+        callback(false, 99, "Can't change acl for owner");
+    else
+    {
+        var repoacl = { acl: aclrights, user: acluser };
+        retrieve('reposetacl', repo, repoacl, callback);
+    }
 }
 
 function showRepoCreate() {
-  var aclelm = document.getElementById('repo-create-acl');
-  document.getElementById('repo-create-name').value = '';
-  aclelm.innerHTML = '<span>(No ACLs)</span>';
-  aclelm.dataset.aclnb = 0;
-  aclAdd('repo-create-acl', 'ramassage-tek', 'r', true); // TODO : check
-  showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
-  document.getElementById('repo-create-name').focus();
+    var aclelm = document.getElementById('repo-create-acl');
+    document.getElementById('repo-create-name').value = '';
+    aclelm.innerHTML = '<span>(No ACLs)</span>';
+    aclelm.dataset.aclnb = 0;
+    aclAdd('repo-create-acl', 'ramassage-tek', 'r', true); // TODO : check
+    showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
+    document.getElementById('repo-create-name').focus();
 }
