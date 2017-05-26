@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.2.1'
+var VERSION = '1.2.2'
 
 
 app.get('/', function (req, res) {
@@ -29,6 +29,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
         body = JSON.parse(signed_data)
     } catch(e) {
         res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
+        return;
     }
 
     var options = {
