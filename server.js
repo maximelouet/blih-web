@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.4.5'
+var VERSION = '1.4.6'
 var SERVER_PORT = 1337
 
 
@@ -148,5 +148,5 @@ app.use(function (req, res, next) {
 // Main server
 
 app.listen(SERVER_PORT, function () {
-    console.log('\n' + get_date() + ' Started BLIH Web on port ' + SERVER_PORT + '.\n')
+    console.log('\n' + get_date() + ' Started BLIH Web version ' + VERSION + ' on port ' + SERVER_PORT + '.\n')
 })
