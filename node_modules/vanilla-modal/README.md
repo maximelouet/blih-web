@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/vanilla-modal.svg)](https://www.npmjs.com/package/vanilla-modal)
 
-[See the demo.](http://thephuse.github.io/vanilla-modal)
+[See the demo.](http://benceg.github.io/vanilla-modal/)
 
 ### A tiny, flexible, completely dependency-free CSS-powered JavaScript modal.
 
