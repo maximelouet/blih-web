@@ -599,6 +599,11 @@ h3#modal-title {
         min-width: calc(20rem + 25vw);
     }
 }
+@media all and (max-width: 800px) {
+    body {
+        font-size: 1em;
+    }
+}
 @media all and (max-width: 700px) {
     header, main {
         padding-left: 2vw;
