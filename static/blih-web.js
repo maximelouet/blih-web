@@ -343,7 +343,7 @@ function login() {
     }
     var pass = new jsSHA("SHA-512", "TEXT");
     pass.update(password);
-    Guser = username;
+    Guser = username.trim();
     Ghashedp = pass.getHash("HEX");
     repoList(function (success, status, response) {
     if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))

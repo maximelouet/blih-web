@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.4.6'
+var VERSION = '1.5.0'
 var SERVER_PORT = 1337
 
 
