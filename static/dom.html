@@ -4,7 +4,7 @@
 </div>
 <div id="modal-repo-delete" class="modal-hider">
   <p>Are you sure you want to delete the repository <strong id="repo-delete-name"></strong> ? This action will <strong>delete all the files</strong> in this repository, and <strong>cannot be undone</strong>.</p>
-  <p>Type in the name of the repository to confirm:</p>
+  <p>Type in the name of the repository to confirm :</p>
   <input type="text" id="repo-delete-confirmname" onkeydown="if (event.keyCode == 13) document.getElementById('repo-delete-confirmbutton').click()" oninput="checkRepoConfirm(document.getElementById('modal-title').innerHTML, htmlEntities(this.value), document.getElementById('repo-delete-confirmbutton'));">
 </div>
 <div id="modal-repo-create" class="modal-hider">

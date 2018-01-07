@@ -223,7 +223,7 @@ function repoOpen(name) {
         if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
         {
             var date = new Date(parseInt(response.message['creation_time']) * 1000);
-            repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }) + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
+            repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }).toLowerCase() + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
         }
         else
             handleError(true, 'An error occured');
@@ -362,6 +362,9 @@ function login() {
             }
         }
         document.getElementById('repolist').innerHTML = repoList;
+
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
 
       });
     }
@@ -621,7 +624,7 @@ function showRepoCreate() {
     document.getElementById('repo-create-name').value = '';
     aclelm.innerHTML = '<span>(No ACLs)</span>';
     aclelm.dataset.aclnb = 0;
-    aclAdd('repo-create-acl', 'ramassage-tek', 'r', true); // TODO : check
+    aclAdd('repo-create-acl', 'ramassage-tek', 'r', true);
     showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
     document.getElementById('repo-create-name').focus();
 }

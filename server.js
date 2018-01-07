@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.5.0'
+var VERSION = '1.6.0'
 var SERVER_PORT = 1337
 
 
@@ -21,26 +21,26 @@ app.get('/', function (req, res) {
     })
 })
 
-function pad(n)
-{
+function pad(n) {
     return (n < 10 ? '0' + n : n)
 }
 
-function get_date()
-{
+function log(message) {
     var d = new Date();
-    return (pad(d.getFullYear()) + '-' + pad(d.getMonth() + 1)  + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()));
+    console.log(pad(d.getFullYear()) + '-' + pad(d.getMonth() + 1)  + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + message);
 }
 
 
 // BLIH Web API
 
 function blih(httpmethod, url, signed_data, sortrepos, res) {
+
     var body
+
     try {
         body = JSON.parse(signed_data)
     } catch(e) {
-        console.log(get_date() + ' Error: invalid client parameters (signed data).')
+        log('Error: invalid client parameters (signed data).')
         res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
         return;
     }
@@ -56,11 +56,10 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
         url: 'https://blih.epitech.eu' + url,
         body: JSON.parse(signed_data)
     }
+
     request(options, function (error, response, body) {
-        if (!error)
-        {
-            if (sortrepos && response.statusCode == 200)
-            {
+        if (!error) {
+            if (sortrepos && response.statusCode == 200) {
                 var repos = []
                 for (var repo in body.repositories)
                     repos.push(repo)
@@ -77,22 +76,20 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
                 username = oui.user;
             }
             catch (e) {
-                console.log(get_date() + ' Warning: cannot extract username from signed_data.')
+                log('Warning: cannot extract username from signed_data.')
             }
-            console.log(get_date() + ' ' + username + ' ' + httpmethod + ' ' + url + ' (' + response.statusCode + ')')
-        }
-        else
-        {
-            console.log(get_date() + ' Error: request to BLIH server failed.')
+            log(username + ' ' + httpmethod + ' ' + url + ' (' + response.statusCode + ')')
+        } else {
+            log('Error: request to BLIH server failed.')
             res.status(500).send('{"ERROR":"Request to BLIH server failed."}')
         }
     })
+
 }
 
 app.post('/api/*', function (req, res, next) {
-    if (!req.body.resource || !req.body.signed_data)
-    {
-        console.log(get_date + ' Error: invalid client parameters (body).')
+    if (!req.body.resource || !req.body.signed_data) {
+        log('Error: invalid client parameters (body).')
         res.status(400).send('{"ERROR":"Invalid parameters (body)."}')
     }
     else
@@ -148,5 +145,5 @@ app.use(function (req, res, next) {
 // Main server
 
 app.listen(SERVER_PORT, function () {
-    console.log('\n' + get_date() + ' Started BLIH Web version ' + VERSION + ' on port ' + SERVER_PORT + '.\n')
+    log('Started BLIH Web v' + VERSION + ' on port ' + SERVER_PORT + '.')
 })
