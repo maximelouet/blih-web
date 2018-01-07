@@ -138,6 +138,9 @@ section#login {
     padding-left: calc(15vw);
     padding-right: calc(15vw);
 }
+section#repos {
+    padding-bottom: 6em;
+}
 
 #login form {
     padding-bottom: 3em;
@@ -178,7 +181,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
 
 #login .btn {
     margin-top: 1em;
-    padding: .7em 1em;
+    padding: .65em 1em .7em;
     float: right;
 }
 
@@ -194,6 +197,9 @@ input:not([type=submit]):not([type=checkbox]):focus {
 .repo-create {
     float: right;
     margin-top: -2em;
+}
+#repos .repo-create:last-child {
+    margin-top: 1.5em;
 }
 
 .acl-container {
@@ -413,9 +419,9 @@ html.act-disabled a, html.act-disabled .btn {
 .modal-inner {
   position: relative;
   overflow: hidden;
-  min-width: calc(10em + 20vw);
+  min-width: calc(20rem + 13vw);
   min-height: 10vh;
-  max-width: 30rem;
+  max-width: 35rem;
   max-height: 90%;
   overflow-x: hidden;
   overflow-y: auto;
@@ -424,7 +430,7 @@ html.act-disabled a, html.act-disabled .btn {
   z-index: -1;
   opacity: 0;
   transform: scale(0.7);
-  margin-top: -10vh;
+  margin-top: -12vh;
   transition: opacity 0.15s, transform 0.15s, z-index 0s 0.15s;
 }
 .modal-visible .modal-inner {
@@ -547,6 +553,12 @@ h3#modal-title {
 
 
 
+@media all and (max-height: 550px) {
+    .modal-inner {
+        max-height: 94%;
+        margin-top: -2vh;
+    }
+}
 
 @media all and (max-width: 1600px) {
     header, main, footer {
@@ -560,41 +572,55 @@ h3#modal-title {
 
 @media all and (max-width: 1200px) {
     header, main, footer {
-        padding-left: 15vw;
-        padding-right: 15vw;
+        padding-left: calc(5vw + 5rem);
+        padding-right: calc(5vw + 5rem);
     }
     .info-container {
         width: calc(100% - 15em - 25vw);
     }
+    section#login {
+        padding-left: 15vw;
+        padding-right: 15vw;
+    }
 }
 @media all and (max-width: 900px) {
     header, main, footer {
-        padding-left: 11vw;
-        padding-right: 11vw;
+        padding-left: 8vw;
+        padding-right: 8vw;
     }
     .info-container {
         width: 75vw;
     }
     section#login {
-        padding-left: 13vw;
-        padding-right: 13vw;
+        padding-left: 14vw;
+        padding-right: 14vw;
+    }
+    .modal-inner {
+        min-width: calc(20rem + 25vw);
     }
 }
 @media all and (max-width: 700px) {
-    header, main, footer {
-        padding-left: 5vw;
-        padding-right: 5vw;
+    header, main {
+        padding-left: 2vw;
+        padding-right: 2vw;
     }
     section#login {
-        padding-left: 11vw;
-        padding-right: 11vw;
+        padding-left: 12vw;
+        padding-right: 12vw;
     }
     .info-container {
         width: 83vw;
     }
+    footer {
+        padding-left: 4vw;
+        padding-right: 4vw;
+    }
+    .modal-inner {
+        min-width: 95vw;
+    }
 }
 @media all and (max-width: 500px) {
-    header, main, footer {
+    header, main {
         padding-left: 2vw;
         padding-right: 2vw;
     }
