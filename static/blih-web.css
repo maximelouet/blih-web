@@ -25,6 +25,12 @@ header {
     background: #691a99;
     text-align: left;
 }
+header.online, header.offline {
+    transition: background 1s;
+}
+header.offline {
+    background: #c0392b;
+}
 footer {
     text-align: right;
     display: block;
@@ -47,6 +53,9 @@ footer a:active, footer a:focus {
   fill: #EF1944;
   width: 1em;
   animation: love 5s ease infinite;
+}
+footer p:first-child {
+  line-height: 1.5em;
 }
 footer p {
   margin: .8em 0;
@@ -189,7 +198,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
     color: rgba(255, 255, 255, 0.6);
 }
 .loading .btn, .btn[disabled], button[disabled] {
-    opacity: .7;
+    opacity: .5;
     pointer-events: none;
 }
 
@@ -356,10 +365,11 @@ input:not([type=submit]):not([type=checkbox]):focus {
     border-right-color: transparent;
     border-bottom-color: transparent;
     border-radius: 50%;
+    z-index: 200;
 }
 
 html:not(.loading) #loader {
-    opacity: 0;
+    display: none;
 }
 html.loading {
     cursor: progress;
@@ -441,7 +451,7 @@ html.act-disabled a, html.act-disabled .btn {
 }
 
 h3#modal-title {
-    font-size: 1.6rem;
+    font-size: 1.5em;
     padding: .55em 2em .6em .6em;
     border-bottom: 2px solid rgba(0, 0, 0, .4);
 }
@@ -478,13 +488,10 @@ h3#modal-title {
   cursor: pointer;
   padding: 0 1rem;
   text-align: center;
-  color: #444;
-}
-[data-modal-close]:hover {
-  color: #222;
+  color: #555;
 }
 [data-modal-close]:active {
-  color: #666;
+  color: #999;
 }
 
 
@@ -572,8 +579,8 @@ h3#modal-title {
 
 @media all and (max-width: 1200px) {
     header, main, footer {
-        padding-left: calc(5vw + 5rem);
-        padding-right: calc(5vw + 5rem);
+        padding-left: calc(10vw + 3rem);
+        padding-right: calc(10vw + 3rem);
     }
     .info-container {
         width: calc(100% - 15em - 25vw);
@@ -582,11 +589,20 @@ h3#modal-title {
         padding-left: 15vw;
         padding-right: 15vw;
     }
+    .modal-inner {
+        min-width: calc(25rem + 20vw);
+    }
+}
+@media all and (max-width: 1100px) {
+    header, main, footer {
+        padding-left: 9vw;
+        padding-right: 9vw;
+    }
 }
 @media all and (max-width: 900px) {
     header, main, footer {
-        padding-left: 8vw;
-        padding-right: 8vw;
+        padding-left: 7vw;
+        padding-right: 7vw;
     }
     .info-container {
         width: 75vw;
@@ -598,10 +614,31 @@ h3#modal-title {
     .modal-inner {
         min-width: calc(20rem + 25vw);
     }
+    #loader {
+        margin-right: -2.5em;
+    }
 }
 @media all and (max-width: 800px) {
+    header, main, footer {
+        padding-left: 5vw;
+        padding-right: 5vw;
+    }
     body {
         font-size: 1em;
+    }
+    .loading header #logged-in-user {
+        display: none;
+    }
+    #loader {
+        margin-right: 0;
+        margin-left: 0;
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .modal
+        font-size: .95em;
     }
 }
 @media all and (max-width: 700px) {

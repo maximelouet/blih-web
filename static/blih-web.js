@@ -11,6 +11,23 @@ const modal = new VanillaModal.default({
     onBeforeOpen: function(){infoHandle('hidden', false)}
 });
 
+function updateConnectivity() {
+    if (navigator.onLine) {
+        document.getElementById('header').className = 'online';
+        actDisabled = false;
+        document.documentElement.classList.remove('act-disabled');
+    } else {
+        document.getElementById('header').className = 'offline';
+        actDisabled = true;
+        document.documentElement.classList.add('act-disabled');
+    }
+}
+
+window.addEventListener('online',  updateConnectivity);
+window.addEventListener('offline', updateConnectivity);
+setTimeout(updateConnectivity, 200);
+
+
 var decodeEntities = (function() {
     // this prevents any overhead from creating the object each time
     var element = document.createElement('div');
@@ -82,7 +99,7 @@ function loader(active) {
         document.documentElement.classList.add('loading');
         document.documentElement.classList.add('act-disabled');
         handleError(false);
-        loaderTimeout = setTimeout(function(){ loader(false); }, 10000);
+        loaderTimeout = setTimeout(function(){ loader(false); }, 15000);
     }
     else
     {
@@ -330,7 +347,16 @@ function getDOM(callback)
     r.send();
 }
 
+function getRealUser(username) {
+    username = username.trim();
+    if (!username.endsWith("@epitech.eu"))
+        username += "@epitech.eu";
+    return (username);
+}
+
 function login() {
+    if (actDisabled)
+        return;
     loader(true);
     handleError(false);
     var username = document.getElementById('login-user').value;
@@ -343,14 +369,14 @@ function login() {
     }
     var pass = new jsSHA("SHA-512", "TEXT");
     pass.update(password);
-    Guser = username.trim();
+    Guser = getRealUser(username);
     Ghashedp = pass.getHash("HEX");
     repoList(function (success, status, response) {
     if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
     {
         getDOM(function(){
 
-        document.getElementById('logged-in-user').innerHTML = htmlEntities(username);
+        document.getElementById('logged-in-user').innerHTML = htmlEntities(Guser);
         document.body.classList.add('logged-in');
         var repoList = '';
         for (repo in response)
