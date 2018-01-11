@@ -11,7 +11,7 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 
-var VERSION = '1.6.1'
+var VERSION = '1.7.0'
 var SERVER_PORT = 1337
 
 
@@ -135,6 +135,9 @@ app.get('/dom', function (req, res) {
 })
 app.get('/blih.py', function (req, res) {
     res.sendFile(__dirname + '/static/blih.py')
+})
+app.get('/favicon.png', function (req, res) {
+    res.sendFile(__dirname + '/static/favicon.png')
 })
 
 app.use(function (req, res, next) {
