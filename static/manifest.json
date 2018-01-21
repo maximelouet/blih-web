@@ -1,0 +1,13 @@
+{
+  "short_name": "BLIH Web",
+  "name": "BLIH Web interface",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "background_color": "#691a99",
+  "theme_color": "#691a99"
+}
