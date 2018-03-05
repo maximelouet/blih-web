@@ -8,4 +8,4 @@ This is the source code of the website running at [https://blih.saumon.io](https
 Please report any bugs in the [issues section](https://github.com/maximelouet/blih-web/issues).
 
 ## License
-This work is licensed under the MIT License (see `LICENSE` file).
+This work is licensed under the Apache License 2.0 (see `LICENSE` file).
