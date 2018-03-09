@@ -1,5 +1,22 @@
-// Maxime Louet - https://github.com/maximelouet/blih-web
-// MIT License
+/*
+ * Copyright 2018 Maxime Louet
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * GitHub repository: https://github.com/maximelouet/blih-web
+ */
 
 var Guser = false;
 var Ghashedp = false;
@@ -232,6 +249,13 @@ function repoOpen(name) {
     loader(true);
     var repoinfo = document.getElementById('repo-info');
     var repoinfoacl = document.getElementById('repo-info-acl-container');
+    if (!name) { // fix for repositories with empty names
+        repoinfo.innerHTML = 'This repository has an empty name, we can\'t access their data through BLIH\'s API.';
+        repoinfoacl.innerHTML = '';
+        showModal('repo-info', '(no name)', '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" disabled onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>');
+        loader(false);
+        return;
+    }
     repoinfo.innerHTML = 'Loading repository info...';
     repoinfoacl.innerHTML = 'Loading ACL...';
     showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
@@ -384,7 +408,9 @@ function login() {
             if (response.hasOwnProperty(repo))
             {
                 repo = htmlEntities(response[repo]);
-                repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
+                repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
+                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
+                repoList += '</li>\n';
             }
         }
         document.getElementById('repolist').innerHTML = repoList;
