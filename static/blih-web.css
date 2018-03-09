@@ -1,5 +1,22 @@
-/* Maxime Louet - https://github.com/maximelouet/blih-web */
-/* MIT License */
+/*
+ * Copyright 2018 Maxime Louet
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * GitHub repository: https://github.com/maximelouet/blih-web
+ */
 
 html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}*,*::before,*::after{-moz-box-sizing:inherit;-webkit-box-sizing:inherit;box-sizing:inherit}a:active,a:hover,button{outline:0}body,html{height:auto;background:#eee}body,legend,td,th{padding:0}body{margin:0;-webkit-text-size-adjust:none;width:auto}article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section,summary{display:block}audio,canvas,progress,video{display:inline-block;vertical-align:baseline}a{background:0 0}b,strong{font-weight:bold;color:#222;}hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}pre,textarea{overflow:auto}code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}button,input,optgroup,select,textarea{color:inherit;font:inherit;margin:0}button{overflow:visible;border:none}button,select{text-transform:none}button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}button[disabled],html input[disabled]{cursor:default}button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}input{line-height:normal}input[type=checkbox],input[type=radio]{box-sizing:border-box;padding:0}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{height:auto}input[type=search]{-webkit-appearance:textfield;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;box-sizing:content-box}input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none}table{border-collapse:collapse;border-spacing:0}ul{list-style-type:none;padding:0;margin:0}
 
@@ -517,6 +534,7 @@ h3#modal-title {
 {
     opacity: 0;
     position: absolute;
+    cursor: pointer;
 }
 :root .acl-list label:active input[type="checkbox"]:not(:checked) + span::before
 {
