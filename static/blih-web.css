@@ -296,6 +296,9 @@ input:not([type=submit]):not([type=checkbox]):focus {
     padding: .45em .7em;
     display: inline-block;
 }
+#repolist .bite a {
+    color: #B2037A;
+}
 #repolist a:hover::after {
     opacity: 1;
 }
