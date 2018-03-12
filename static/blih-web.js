@@ -148,19 +148,30 @@ function handleSuccess(open, msg) {
         infoHandle('hidden', false);
 }
 
+function computeRepoList(response) {
+    var repoList = '';
+    for (repo in response)
+    {
+        if (response.hasOwnProperty(repo))
+        {
+            repo = htmlEntities(response[repo]);
+            repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
+            repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a>';
+            if (repo)
+                repoList += '<button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
+            else
+                repoList += '<button class="btn" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
+            repoList += '</li>\n';
+        }
+    }
+    return repoList;
+}
+
 function refreshRepolist() {
     repoList(function (success, status, response) {
         if (success && !response.hasOwnProperty('error'))
         {
-            var repoList = '';
-            for (repo in response)
-            {
-                if (response.hasOwnProperty(repo))
-                {
-                    repo = htmlEntities(response[repo]);
-                    repoList += '<li><a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button></li>\n';
-                }
-            }
+            var repoList = computeRepoList(response);
             document.getElementById('repolist').innerHTML = repoList;
         }
         else
@@ -402,17 +413,7 @@ function login() {
 
         document.getElementById('logged-in-user').innerHTML = htmlEntities(Guser);
         document.body.classList.add('logged-in');
-        var repoList = '';
-        for (repo in response)
-        {
-            if (response.hasOwnProperty(repo))
-            {
-                repo = htmlEntities(response[repo]);
-                repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
-                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a><button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
-                repoList += '</li>\n';
-            }
-        }
+        var repoList = computeRepoList(response);
         document.getElementById('repolist').innerHTML = repoList;
 
         document.body.scrollTop = 0;
@@ -444,7 +445,9 @@ function login() {
 }
 
 function resetSaveAcl() {
-    document.getElementById('save-acl').disabled = false;
+    var saveAcl = document.getElementById('save-acl');
+    if (saveAcl)
+        saveAcl.disabled = false;
     handleError(false, false);
 }
 
@@ -457,7 +460,7 @@ function aclAdd(aclRootElmId, user, rights, intended) {
         aclRootElm.innerHTML = '';
     var li = document.createElement('li');
     if (intended)
-        li.className = 'draft'; // draft status while not saved
+        li.classList.add('draft'); // draft status while not saved
     var name = document.createElement('input');
     name.type = "text";
     if (!intended)
@@ -494,6 +497,9 @@ function aclAdd(aclRootElmId, user, rights, intended) {
     cb1.value = "r";
     cb2.value = "w";
     cb3.value = "a";
+    cb1.onclick = checkboxToggleHandler;
+    cb2.onclick = checkboxToggleHandler;
+    cb3.onclick = checkboxToggleHandler;
     if (aclRootElmId != 'repo-create-acl')
     {
         cb1.onchange = resetSaveAcl;
@@ -545,7 +551,7 @@ function aclRem(aclRootElm, elmToRem) {
     if (parseInt(aclRootElm.dataset.aclnb) <= 0)
         return;
     aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
-    if (elmToRem.className != 'draft')
+    if (!elmToRem.classList.contains('draft'))
     {
         var acltorem = aclRootElm.dataset.acltorem.split(',');
         if (acltorem == ',')
@@ -593,7 +599,7 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
                 function(success, status, response) {
                     if (success)
                     {
-                        aclRootElm.children[curindex].className = ''; // reset 'draft' status
+                        aclRootElm.children[curindex].classList.remove('draft'); // reset 'draft' status
                         aclRootElm.children[curindex].children[0].disabled = true;
                     }
                     if (!success)
@@ -679,4 +685,25 @@ function showRepoCreate() {
     aclAdd('repo-create-acl', 'ramassage-tek', 'r', true);
     showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
     document.getElementById('repo-create-name').focus();
+}
+
+function checkboxToggleHandler() {
+    var acls = this.parentElement.parentElement.getElementsByTagName('input');
+    if (acls[0].checked === false && acls[1].checked === false && acls[2].checked === false) {
+        this.parentElement.parentElement.parentElement.classList.add('for-deletion');
+    } else {
+        this.parentElement.parentElement.parentElement.classList.remove('for-deletion');
+    }
+}
+
+function attachCheckboxHandlers(modalElm) {
+
+    var elms = modalElm.getElementsByTagName('input');
+
+    // assign function to onclick property of each checkbox
+    for (var i = 0, len = elms.length; i < len; i++) {
+        if (elms[i].type === 'checkbox') {
+            elms[i].onclick = checkboxToggleHandler;
+        }
+    }
 }

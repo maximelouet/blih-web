@@ -256,7 +256,9 @@ input:not([type=submit]):not([type=checkbox]):focus {
   background: rgba(0, 0, 0, .05)!important;
   border-color: rgba(0, 0, 0, .05)!important;
 }
-
+.acl-list li.for-deletion {
+  opacity: .5;
+}
 
 .bg-red {
     background: #C22F1C;
