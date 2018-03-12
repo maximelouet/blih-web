@@ -499,7 +499,11 @@ h3#modal-title {
 #modal-act .btn {
   margin-left: .4em;
 }
-
+.repo-open-error {
+  text-align: center;
+  font-style: italic;
+  margin: 2em auto;
+}
 
 
 [data-modal-close] {

@@ -261,7 +261,7 @@ function repoOpen(name) {
     var repoinfo = document.getElementById('repo-info');
     var repoinfoacl = document.getElementById('repo-info-acl-container');
     if (!name) { // fix for repositories with empty names
-        repoinfo.innerHTML = 'This repository has an empty name, we can\'t access their data through BLIH\'s API.';
+        repoinfo.innerHTML = '<p class="repo-open-error">This repository has an empty name, we can\'t access their data through BLIH\'s API.</p>';
         repoinfoacl.innerHTML = '';
         showModal('repo-info', '(no name)', '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" disabled onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>');
         loader(false);
@@ -272,20 +272,28 @@ function repoOpen(name) {
     showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
     repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
     repoGetInfo(name, function(success, status, response) {
-        if (success && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid'))
-        {
+        if (success && response.hasOwnProperty('error')) {
+            repoinfo.innerHTML = '<p class="repo-open-error">' + response['error'] + '</p>';
+            repoinfoacl.innerHTML = '';
+            document.getElementById('modal-act').innerHTML = '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button disabled class="btn bg-red" onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>';
+            loader(false);
+        }
+        else if (success && response.message && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid')) {
             var date = new Date(parseInt(response.message['creation_time']) * 1000);
             repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }).toLowerCase() + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
+            loader(false);
         }
-        else
+        else {
+            repoinfoacl.innerHTML = '';
             handleError(true, 'An error occured');
+        }
     });
     repoGetAcl(name, function(success, status, response) {
         if (success)
         {
-            repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading</span></ul>';
-            if (response.hasOwnProperty('error'))
-                document.getElementById('repo-info-acl').innerHTML = '<span>(' + response['error'] + ')</span>';
+            if (response.hasOwnProperty('error')) {
+                return;
+            }
             else
             {
                 for (key in response)
