@@ -312,6 +312,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
     display: inline-block;
     padding: 0; margin: 0;
     width: 88%;
+    line-height: 1.2rem;
 }
 /* long repo names */
 #repolist li span, #modal-title {
@@ -532,6 +533,7 @@ h3#modal-title {
 :root .acl-list label
 {
     cursor: pointer;
+    padding-bottom: .2em;
 }
 :root .acl-list input[type="checkbox"]
 {
