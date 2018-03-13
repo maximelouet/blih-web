@@ -1,13 +1,14 @@
 {
   "name": "blih-web",
-  "version": "1.7.4",
+  "version": "1.8.0",
   "description": "Web interface for Epitech BLIH",
   "main": "server.js",
   "dependencies": {
     "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
     "ejs": "^2.5.7",
-    "express": "^4.16.2",
-    "request": "^2.83.0",
+    "express": "^4.16.3",
+    "request": "^2.85.0",
     "vanilla-modal": "^1.6.5"
   },
   "devDependencies": {},
@@ -20,7 +21,7 @@
     "url": "git+ssh://git@github.com/maximelouet/blih-web.git"
   },
   "author": "Maxime Louet",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/maximelouet/blih-web/issues"
   },

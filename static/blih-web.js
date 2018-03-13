@@ -155,12 +155,15 @@ function computeRepoList(response) {
         if (response.hasOwnProperty(repo))
         {
             repo = htmlEntities(response[repo]);
-            repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
-            repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a>';
-            if (repo)
+            if (!repo) {
+                repoList += '<li class="no-name">';
+                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'\');"><span> </span></a>';
+                repoList += '<button class="btn" onclick="event.preventDefault(); repoOpen(\'\');"><i class="i i-times"></i></button>';
+            } else {
+                repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
+                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a>';
                 repoList += '<button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
-            else
-                repoList += '<button class="btn" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
+            }
             repoList += '</li>\n';
         }
     }
@@ -222,6 +225,7 @@ function retrieve(url, resource, data, callback) {
     var params = 'resource=' + encodeURIComponent(resource) + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
     var r = new XMLHttpRequest();
     r.onreadystatechange = function() {
+        loader(true);
         if (r.readyState == 4) {
             if (callback && typeof(callback) === "function") {
                 var success = false;
@@ -243,10 +247,35 @@ function retrieve(url, resource, data, callback) {
     r.send(params);
 }
 
+function rememberMe(username) {
+    loader(true);
+    var params = 'saved_login=' + encodeURIComponent(username);
+    var r = new XMLHttpRequest();
+    r.open('POST', '/rememberme');
+    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+    r.send(params);
+}
+function forgetMe() {
+    var loginInput = document.getElementById('login-user');
+    var saved_login = document.getElementById('saved_login').value;
+    var params = 'saved_login=' + encodeURIComponent(saved_login);
+    var r = new XMLHttpRequest();
+    r.onreadystatechange = function() {
+        if (r.readyState == 4) {
+            location.reload();
+        }
+        loader(true);
+    };
+    r.open('POST', '/forgetme');
+    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+    loader(true);
+    r.send(params);
+}
+
 
 function promptDelete(repo) {
     document.getElementById('repo-delete-confirmname').value = '';
-    showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm</button>');
+    showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm deletion</button>');
     document.getElementById('repo-delete-confirmname').focus();
 }
 
@@ -267,10 +296,9 @@ function repoOpen(name) {
         loader(false);
         return;
     }
-    repoinfo.innerHTML = 'Loading repository info...';
-    repoinfoacl.innerHTML = 'Loading ACL...';
-    showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
+    repoinfo.innerHTML = '<span>Loading repository info...</span>';
     repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
+    showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
     repoGetInfo(name, function(success, status, response) {
         if (success && response.hasOwnProperty('error')) {
             repoinfo.innerHTML = '<p class="repo-open-error">' + response['error'] + '</p>';
@@ -292,7 +320,7 @@ function repoOpen(name) {
         if (success)
         {
             if (response.hasOwnProperty('error')) {
-                return;
+                document.getElementById('repo-info-acl').innerHTML = '<span>(' + response.error + ')</span>';
             }
             else
             {
@@ -377,14 +405,17 @@ function getFormAcl(dataId) {
 
 function getDOM(callback)
 {
+    loader(true);
     var r = new XMLHttpRequest();
     r.onreadystatechange = function() {
-    if (r.readyState == 4 && r.status == 200) {
-        document.getElementById('logged-in-dom').innerHTML = r.responseText;
-        callback();
-    }
-    else if (r.readyState == 4)
-        handleError(true, 'An unknown error occured.');
+        loader(true);
+        if (r.readyState == 4 && r.status == 200) {
+            document.getElementById('logged-in-dom').innerHTML = r.responseText;
+            callback();
+        }
+        else if (r.readyState == 4) {
+            handleError(true, 'An unknown error occured.');
+        }
     };
     r.open('GET', '/dom');
     r.send();
@@ -404,7 +435,7 @@ function login() {
     handleError(false);
     var username = document.getElementById('login-user').value;
     var password = document.getElementById('login-pass').value;
-    if (username.length < 5 || password.length < 5)
+    if (username.length < 5 || password.length < 3)
     {
         handleError(true, 'Invalid username/password.');
         loader(false);
@@ -417,22 +448,29 @@ function login() {
     repoList(function (success, status, response) {
     if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
     {
+        loader(true);
+        rememberMe(username);
+        loader(true);
+
         getDOM(function(){
 
-        document.getElementById('logged-in-user').innerHTML = htmlEntities(Guser);
-        document.body.classList.add('logged-in');
-        var repoList = computeRepoList(response);
-        document.getElementById('repolist').innerHTML = repoList;
+            loader(true);
+            document.getElementById('logged-in-user').innerHTML = htmlEntities(Guser);
+            document.body.classList.add('logged-in');
+            var repoList = computeRepoList(response);
+            document.getElementById('repolist').innerHTML = repoList;
 
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+            loader(false);
 
-      });
+        });
     }
     else
     {
         Guser = false;
         Ghashedp = false;
+        loader(false);
         try {
             var parsed = JSON.parse(response);
             if (parsed.hasOwnProperty('ERROR'))
@@ -448,7 +486,6 @@ function login() {
             handleError(true, 'An unknown error has occured.');
         }
     }
-    loader(false);
     });
 }
 
@@ -607,8 +644,17 @@ function repoSetAllAcl(repo, aclRootElmId, callback) {
                 function(success, status, response) {
                     if (success)
                     {
-                        aclRootElm.children[curindex].classList.remove('draft'); // reset 'draft' status
-                        aclRootElm.children[curindex].children[0].disabled = true;
+                        if (aclRootElm.children[curindex].classList.contains('for-deletion')) {
+                            aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
+
+                            aclRootElm.removeChild(aclRootElm.children[curindex]);
+                            if (parseInt(aclRootElm.dataset.aclnb) == 0)
+                                aclRootElm.innerHTML = '<span>(No ACLs)</span>';
+                        }
+                        else {
+                            aclRootElm.children[curindex].classList.remove('draft'); // reset 'draft' status
+                            aclRootElm.children[curindex].children[0].disabled = true;
+                        }
                     }
                     if (!success)
                         reject([status, response, aclRootElmId]);

@@ -54,15 +54,16 @@ footer {
     padding-top: 1rem;
     padding-bottom: 2rem;
 }
-footer a {
+footer a, #forget-me {
   text-decoration: none!important;
   color: #2060C0;
   border-bottom: 2px solid #5080E0;
 }
-footer a:hover {
+footer a:hover, #forget-me:hover {
+  color: #1040B0;
   border-bottom-color: #2030D0;
 }
-footer a:active, footer a:focus {
+footer a:active, #forget-me:active, footer a:focus, #forget-me:focus {
   color: #60A0E0;
   border-bottom-color: #6090E0;
 }
@@ -172,6 +173,13 @@ section#repos {
     padding-bottom: 3em;
 }
 
+#forget-me {
+    display: inline-block;
+    margin-top: 1.4em;
+    float: left;
+}
+
+
 label {
     display: block;
     color: #555;
@@ -198,7 +206,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
 }
 
 .btn {
-    padding: .4em .7em .55em;
+    padding: .45em .7em .5em;
     color: #fff;
     border: none!important;
     outline: none!important;
@@ -210,6 +218,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
     padding: .65em 1em .7em;
     float: right;
 }
+
 
 .btn:active {
     color: rgba(255, 255, 255, 0.6);
@@ -285,7 +294,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
     display: block;
     width: calc(100% - 2.5rem);
     padding: .5em;
-    padding-bottom: .35em;
+    padding-bottom: .45em;
 }
 #repolist a::after {
     opacity: 0;
@@ -311,16 +320,19 @@ input:not([type=submit]):not([type=checkbox]):focus {
     color: rgba(255, 255, 255, 0.6);
 }
 #repolist li span {
-    display: inline-block;
     padding: 0; margin: 0;
     width: 88%;
-    line-height: 1.2rem;
+    line-height: 1.3rem;
+    display: block;
 }
 /* long repo names */
 #repolist li span, #modal-title {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+#repolist li.no-name span {
+    white-space: pre-wrap;
 }
 #repolist button { /* delete button in repo list on the right */
     width: 2.5rem;
@@ -541,6 +553,9 @@ h3#modal-title {
     cursor: pointer;
     padding-bottom: .2em;
 }
+.acl-list > span, #repo-info > span { /* Loading messages, ACL error message or "No ACLs" message */
+    font-style: italic;
+}
 :root .acl-list input[type="checkbox"]
 {
     opacity: 0;
@@ -558,8 +573,8 @@ h3#modal-title {
 }
 :root .acl-list input[type="checkbox"] + span::before
 {
-    margin-right: .1em;
-    margin-left: .2em;
+    margin-right: .2em;
+    margin-left: .3em;
     content: "";
     width: 1.5rem; height: 1.5rem;
     border: .1em solid rgba(0, 0, 0, .3);
@@ -571,7 +586,6 @@ h3#modal-title {
     color: #fff;
     background: #1A9969;
     border-color: #1A9969;
-    border-width: 0;
 }
 :root .acl-list input[type="checkbox"]:disabled + span
 {
@@ -666,7 +680,7 @@ h3#modal-title {
         left: 50%;
         transform: translateX(-50%);
     }
-    .modal
+    .modal {
         font-size: .95em;
     }
 }

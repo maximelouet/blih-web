@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<!-- Created by Maxime 'Saumon' Louet -->
+<!-- Copyright 2018 Maxime Louet - GitHub repository: https://github.com/maximelouet/blih-web -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <title>BLIH Web</title>
     <link rel="stylesheet" type="text/css" href="/blih-web.css">
-    <meta name="description" content="Unofficial Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
+    <meta name="description" content="Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
     <meta name="twitter:card" value="summary">
     <meta property="og:title" content="BLIH Web">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://blih.saumon.io">
     <meta property="og:image" content="https://img.saumon.io/blih-web.png">
-    <meta property="og:description" content="Unofficial Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
+    <meta property="og:description" content="Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="robots" content="all">
     <meta name="theme-color" content="#691a99">
@@ -32,10 +32,14 @@
         <p>Please enter your Epitech login and password to continue.</p>
         <form onsubmit="event.preventDefault(); login(); return false;">
             <label for="login-user">Login</label>
-            <input type="text" placeholder="firstname.lastname" id="login-user" autofocus>
+            <input type="text" placeholder="firstname.lastname" id="login-user" value="<%= login %>" autocomplete="off"<% if (!login) { %> autofocus<% } %>>
             <label for="login-pass">Password</label>
-            <input type="password" placeholder="Epitech password" id="login-pass">
-            <button class="btn bg-green" onclick="event.preventDefault(); login(); return false;">Login <i class="i i-right"></i></button>
+            <input type="password" placeholder="Epitech password" id="login-pass" autocomplete="current-password" <% if (login) { %> autofocus<% } %>>
+            <% if (login) { %>
+            <input type="hidden" name="saved_login" id="saved_login" value="<%= login %>">
+            <a href="/forgetme" id="forget-me" onclick="event.preventDefault(); forgetMe();">Forget my login</a>
+            <% } %>
+            <button class="btn bg-green" type="submit" onclick="event.preventDefault(); login(); return false;">Login <i class="i i-right"></i></button>
         </form>
     </section>
     <section id="repos">

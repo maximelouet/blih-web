@@ -21,20 +21,23 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 var request = require('request')
+var cookieParser = require('cookie-parser')
 
 var app = express()
 
 app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cookieParser())
 
-var VERSION = '1.7.4'
+var VERSION = '1.8.0'
 var SERVER_PORT = 1337
 
 
 app.get('/', function (req, res) {
     res.render(__dirname + '/static/index.ejs', {
-        version: VERSION
+        version: VERSION,
+        login: req.cookies.saved_login
     })
 })
 
@@ -55,7 +58,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
     var body
 
     try {
-        body = JSON.parse(signed_data)
+        parsed_body = JSON.parse(signed_data)
     } catch(e) {
         log('Error: invalid client parameters (signed data).')
         res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
@@ -71,7 +74,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
         json: true,
         method: httpmethod,
         url: 'https://blih.epitech.eu' + url,
-        body: JSON.parse(signed_data)
+        body: parsed_body
     }
 
     request(options, function (error, response, body) {
@@ -89,7 +92,7 @@ function blih(httpmethod, url, signed_data, sortrepos, res) {
                 res.status(response.statusCode).send(body)
             var username = '(unknown user)';
             try {
-                var oui = JSON.parse(signed_data);
+                var oui = parsed_body;
                 username = oui.user;
             }
             catch (e) {
@@ -130,6 +133,27 @@ app.post('/api/repodel', function (req, res) {
 })
 app.post('/api/reposetacl', function (req, res) {
     blih('POST', '/repository/' + req.body.resource + '/acls', req.body.signed_data, false, res)
+})
+
+
+// Persistent usernames
+
+app.post('/rememberme', function (req, res) {
+    if (req.body.saved_login) {
+        res.cookie('saved_login', req.body.saved_login, { maxAge: 1000 * 60 * 60 * 24 * 365, httpOnly: true })
+        res.status(200).send('OK')
+    } else {
+        res.status(200).send('Nothing done')
+    }
+})
+app.post('/forgetme', function (req, res) {
+    if (req.body.saved_login) {
+        res.clearCookie('saved_login')
+        log(req.body.saved_login + ' FORGET ME')
+        res.status(200).send('OK')
+    } else {
+        res.status(200).send('Nothing done')
+    }
 })
 
 
