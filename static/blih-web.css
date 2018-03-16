@@ -18,7 +18,17 @@
  * GitHub repository: https://github.com/maximelouet/blih-web
  */
 
-html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}*,*::before,*::after{-moz-box-sizing:inherit;-webkit-box-sizing:inherit;box-sizing:inherit}a:active,a:hover,button{outline:0}body,html{height:auto;background:#eee}body,legend,td,th{padding:0}body{margin:0;-webkit-text-size-adjust:none;width:auto}article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section,summary{display:block}audio,canvas,progress,video{display:inline-block;vertical-align:baseline}a{background:0 0}b,strong{font-weight:bold;color:#222;}hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}pre,textarea{overflow:auto}code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}button,input,optgroup,select,textarea{color:inherit;font:inherit;margin:0}button{overflow:visible;border:none}button,select{text-transform:none}button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}button[disabled],html input[disabled]{cursor:default}button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}input{line-height:normal}input[type=checkbox],input[type=radio]{box-sizing:border-box;padding:0}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{height:auto}input[type=search]{-webkit-appearance:textfield;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;box-sizing:content-box}input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none}table{border-collapse:collapse;border-spacing:0}ul{list-style-type:none;padding:0;margin:0}
+html {
+    box-sizing: border-box; 
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}a:active,a:hover,button{outline:0}body,html{height:auto;background:#eee}body,legend,td,th{padding:0}body{margin:0;-webkit-text-size-adjust:none;width:auto}article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section,summary{display:block}audio,canvas,progress,video{display:inline-block;vertical-align:baseline}a{background:0 0}b,strong{font-weight:bold;color:#222;}hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}pre,textarea{overflow:auto}code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}button,input,optgroup,select,textarea{color:inherit;font:inherit;margin:0}button{overflow:visible;border:none}button,select{text-transform:none}button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}button[disabled],html input[disabled]{cursor:default}button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}input{line-height:normal}input[type=checkbox],input[type=radio]{box-sizing:border-box;padding:0}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{height:auto}input[type=search]{-webkit-appearance:textfield;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;box-sizing:content-box}input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none}table{border-collapse:collapse;border-spacing:0}ul{list-style-type:none;padding:0;margin:0}
 
 
 a {
@@ -156,6 +166,7 @@ body section {
     display: none;
     padding: 2em calc(1em + 4vw) 3em;
     box-shadow: 0 0 .6em rgba(0, 0, 0, .3);
+    box-shadow: 0 .12em .3em rgba(0,0,0,0.16), 0 .12em .3em rgba(0,0,0,0.23);
 }
 body:not(.logged-in) #login, .logged-in #repos {
     display: block;
@@ -184,6 +195,10 @@ label {
     display: block;
     color: #555;
     padding: .1em 0 .4em;
+}
+label[for="repo-create-name"] {
+    padding-top: .5em;
+    color: #333;
 }
 .acl-container label {
     display: inline-block;
@@ -406,7 +421,7 @@ input:not([type=submit]):not([type=checkbox]):focus {
 html:not(.loading) #loader {
     display: none;
 }
-html.loading {
+html.loading, html.loading input, html.loading .acl-list input[type="checkbox"]:disabled + span, html.loading label {
     cursor: progress;
 }
 html.act-disabled a, html.act-disabled .btn {
@@ -471,7 +486,7 @@ html.act-disabled a, html.act-disabled .btn {
   overflow-x: hidden;
   overflow-y: auto;
   background: #fff;
-  box-shadow: 0 0 1.5em rgba(0, 0, 0, .4);
+  box-shadow: 0 .2em 1.5em rgba(0, 0, 0, .35);
   z-index: -1;
   opacity: 0;
   transform: scale(0.7);
@@ -486,8 +501,8 @@ html.act-disabled a, html.act-disabled .btn {
 }
 
 h3#modal-title {
-    font-size: 1.5em;
-    padding: .55em 2em .6em .6em;
+    font-size: 1.4em;
+    padding: .6em 2em .6em .6em;
     border-bottom: 2px solid rgba(0, 0, 0, .4);
 }
 .modal-content {
@@ -550,7 +565,6 @@ h3#modal-title {
 }
 :root .acl-list label
 {
-    cursor: pointer;
     padding-bottom: .2em;
 }
 .acl-list > span, #repo-info > span { /* Loading messages, ACL error message or "No ACLs" message */
@@ -560,7 +574,6 @@ h3#modal-title {
 {
     opacity: 0;
     position: absolute;
-    cursor: pointer;
 }
 :root .acl-list label:active input[type="checkbox"]:not(:checked) + span::before
 {
@@ -736,6 +749,19 @@ h3#modal-title {
         width: 87vw;
     }
 
+}
+
+@media all and (max-height: 700px) {
+    .modal-inner {
+        margin-top: -3vh;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 @font-face{font-family:'BIcons';src:url(data:application/font-woff;charset=utf-8;base64,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) format('woff');font-weight:normal;font-style:normal}.i{display:inline-block;font:normal normal normal 14px/1 'BIcons';font-size:inherit;text-rendering:auto;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.i-lg{font-size:1.33333333em;line-height:0.75em;vertical-align:-15%}.i-2x{font-size:2em}.i-3x{font-size:3em}.i-4x{font-size:4em}.i-5x{font-size:5em}.i-trash:before{content:'\f001'}.i-user:before{content:'\f002'}.i-times:before{content:'\f003'}.i-exclamation:before{content:'\f004'}.i-plus:before{content:'\f005'}.i-right:before{content:'\f006'}.i-refresh:before{content:'\f008'}.i-settings:before{content:'\f009'}.i-success:before{content:'\f00b'}.i-sign-out:before{content:'\f00c'}.i-sign-in:before{content:'\f00d'}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}.sr-only-focusable:active,.sr-only-focusable:focus{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto}
