@@ -30,7 +30,7 @@ app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-var VERSION = '1.8.0'
+var VERSION = '1.8.1'
 var SERVER_PORT = 1337
 
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <title>BLIH Web</title>
-    <link rel="stylesheet" type="text/css" href="/blih-web.css?1561fe6">
+    <link rel="stylesheet" type="text/css" href="/blih-web.css?c2d405f">
     <meta name="description" content="Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
     <meta name="twitter:card" value="summary">
     <meta property="og:title" content="BLIH Web">
@@ -22,7 +22,7 @@
 <header id="header">
     <h1><a href="/" onclick="if (Guser != false) { event.preventDefault(); refreshRepolist(); this.blur(); }" id="brand">BLIH Web</a></h1>
     <div id="loader"></div>
-    <button class="logout" title="Logout" onclick="loader(true); window.location.href='/';"><i class="i i-sign-out"></i></button>
+    <button class="logout" title="Logout" onclick="event.preventDefault(); handleError(false); loader(true); window.location.href='/';"><i class="i i-sign-out"></i></button>
     <span id="logged-in-user"></span>
 </header>
 <div id="info-container" class="info-container hidden" onclick="infoHandle('hidden', false); this.blur();" title="Click to dismiss"></div>
@@ -69,7 +69,7 @@
     <p><a href="https://github.com/maximelouet/blih-web">View this project on GitHub</a></p>
 </footer>
 <script src="/modal.js"></script>
-<script src="/blih-web.js?bbfc256"></script>
+<script src="/blih-web.js?98d00e9"></script>
 <script src="/meow.js"></script>
 </body>
 </html>

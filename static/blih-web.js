@@ -23,6 +23,9 @@ var Ghashedp = false;
 var actDisabled = false;
 var loaderTimeout = false;
 
+var repoLoadingInfoCompleted = true;
+var repoLoadingAclCompleted = true;
+
 const modal = new VanillaModal.default({
     loadClass: 'modal-ok',
     onBeforeOpen: function(){infoHandle('hidden', false)}
@@ -115,7 +118,6 @@ function loader(active) {
         actDisabled = true;
         document.documentElement.classList.add('loading');
         document.documentElement.classList.add('act-disabled');
-        handleError(false);
         loaderTimeout = setTimeout(function(){ loader(false); }, 15000);
     }
     else
@@ -287,6 +289,7 @@ function handleSaveAcl(success) {
 
 function repoOpen(name) {
     loader(true);
+    handleError(false);
     var repoinfo = document.getElementById('repo-info');
     var repoinfoacl = document.getElementById('repo-info-acl-container');
     if (!name) { // fix for repositories with empty names
@@ -296,20 +299,25 @@ function repoOpen(name) {
         loader(false);
         return;
     }
+    repoLoadingInfoCompleted = false;
+    repoLoadingAclCompleted = false;
     repoinfo.innerHTML = '<span>Loading repository info...</span>';
     repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
     showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
     repoGetInfo(name, function(success, status, response) {
+        repoLoadingInfoCompleted = true;
         if (success && response.hasOwnProperty('error')) {
             repoinfo.innerHTML = '<p class="repo-open-error">' + response['error'] + '</p>';
             repoinfoacl.innerHTML = '';
             document.getElementById('modal-act').innerHTML = '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button disabled class="btn bg-red" onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>';
-            loader(false);
+            if (repoLoadingAclCompleted)
+                loader(false);
         }
         else if (success && response.message && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid')) {
             var date = new Date(parseInt(response.message['creation_time']) * 1000);
             repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }).toLowerCase() + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
-            loader(false);
+            if (repoLoadingAclCompleted)
+                loader(false);
         }
         else {
             repoinfoacl.innerHTML = '';
@@ -317,6 +325,7 @@ function repoOpen(name) {
         }
     });
     repoGetAcl(name, function(success, status, response) {
+        repoLoadingAclCompleted = true;
         if (success)
         {
             if (response.hasOwnProperty('error')) {
@@ -330,7 +339,8 @@ function repoOpen(name) {
                         aclAdd('repo-info-acl', key, response[key], false);
                 }
             }
-            loader(false);
+            if (repoLoadingInfoCompleted)
+                loader(false);
         }
         else
             handleApiError(status, response);
