@@ -22,6 +22,8 @@ var express = require('express')
 var bodyParser = require('body-parser')
 var request = require('request')
 var cookieParser = require('cookie-parser')
+var path = require('path');
+var staticify = require('staticify')(path.join(__dirname, 'public'));
 
 var app = express()
 
@@ -29,15 +31,19 @@ app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
+app.use(staticify.middleware);
 
-var VERSION = '1.8.2'
-var SERVER_PORT = 1337
-
+let VERSION = '1.8.3'
+let SERVER_PORT = 1337
 
 app.get('/', function (req, res) {
-    res.render(__dirname + '/static/index.ejs', {
+    res.render(__dirname + '/public/index.ejs', {
         version: VERSION,
-        login: req.cookies.saved_login
+        login: req.cookies.saved_login,
+        cssPath: staticify.getVersionedPath('/blih-web.css'),
+        jsPath: staticify.getVersionedPath('/blih-web.js'),
+        meowPath: staticify.getVersionedPath('/meow.js'),
+        modalPath: staticify.getVersionedPath('/modal.js')
     })
 })
 
@@ -159,29 +165,17 @@ app.post('/forgetme', function (req, res) {
 
 // Static files
 
-app.get('/blih-web.css', function (req, res) {
-    res.sendFile(__dirname + '/static/blih-web.min.css')
-})
-app.get('/blih-web.js', function (req, res) {
-    res.sendFile(__dirname + '/static/blih-web.min.js')
-})
-app.get('/meow.js', function (req, res) {
-    res.sendFile(__dirname + '/static/meow.js')
-})
-app.get('/modal.js', function (req, res) {
-    res.sendFile(__dirname + '/node_modules/vanilla-modal/dist/index.js')
-})
 app.get('/dom', function (req, res) {
-    res.sendFile(__dirname + '/static/dom.html')
+    res.sendFile(__dirname + '/public/dom.html')
 })
 app.get('/blih.py', function (req, res) {
-    res.sendFile(__dirname + '/static/blih.py')
+    res.sendFile(__dirname + '/public/blih.py')
 })
 app.get('/favicon.png', function (req, res) {
-    res.sendFile(__dirname + '/static/favicon.png')
+    res.sendFile(__dirname + '/public/favicon.png')
 })
 app.get('/manifest.json', function (req, res) {
-    res.sendFile(__dirname + '/static/manifest.json')
+    res.sendFile(__dirname + '/public/manifest.json')
 })
 
 app.use(function (req, res, next) {

@@ -1,6 +1,6 @@
 {
   "name": "blih-web",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Web interface for Epitech BLIH",
   "main": "server.js",
   "dependencies": {
@@ -9,6 +9,7 @@
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "request": "^2.85.0",
+    "staticify": "^2.0.0",
     "vanilla-modal": "^1.6.5"
   },
   "devDependencies": {},
