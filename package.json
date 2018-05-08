@@ -1,12 +1,12 @@
 {
   "name": "blih-web",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Web interface for Epitech BLIH",
   "main": "server.js",
   "dependencies": {
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
-    "ejs": "^2.5.7",
+    "ejs": "^2.6.1",
     "express": "^4.16.3",
     "request": "^2.85.0",
     "vanilla-modal": "^1.6.5"
