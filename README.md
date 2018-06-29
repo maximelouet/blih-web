@@ -1,7 +1,7 @@
 # blih-web
 Web interface for Epitech BLIH
 
-![Screenshot of the repository list](https://img.saumon.io/blih-web.png "Repository list")
+![Screenshot of the repository list](https://img.saumon.io/blih-web-beta.png "Repository list")
 
 This is the source code of the website running at [https://blih.saumon.io](https://blih.saumon.io).
 

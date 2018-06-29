@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var program = require('commander');
+var through2 = require('through2');
+var extend = require('xtend');
+var htmlmin = require('html-minifier');
+
+program
+    .usage('[options] [file]')
+    .option('-o, --output <file>', 'Write output to this file instead of stdout')
+    .option('-u, --unsafe', 'Enable unsafe compression options')
+    .parse(process.argv);
+
+var options = {
+    removeComments: true,
+    removeCommentsFromCDATA: true,
+    removeCDATASectionsFromCDATA: true,
+    collapseWhitespace: true,
+    collapseBooleanAttributes: true,
+    removeAttributeQuotes: true,
+    removeRedundantAttributes: true,
+    useShortDoctype: true,
+    removeEmptyAttributes: true,
+    removeOptionalTags: true
+};
+
+if (program.unsafe) {
+    extend(options, {
+        removeIgnored: true,
+        removeEmptyElements: true,
+        removeScriptTypeAttributes: true,
+        removeStyleLinkTypeAttributes: true,
+        caseSensitive: true
+    });
+}
+
+var content = '';
+var minify = through2(function (chunk, enc, cb) {
+    content += chunk;
+    cb();
+}, function () {
+    content = htmlmin.minify(content, options);
+    this.push(content);
+});
+
+var src;
+if (program.args.length) {
+    src = fs.createReadStream(program.args[0], { encoding: 'utf8' });
+} else {
+    src = process.stdin;
+}
+
+var dest;
+if (program.output) {
+    dest = fs.createWriteStream(program.output);
+} else {
+    dest = process.stdout;
+}
+
+src.pipe(minify).pipe(dest);
