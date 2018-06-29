@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<!-- Copyright 2018 Maxime Louet - GitHub repository: https://github.com/maximelouet/blih-web -->
-<html lang="en">
+<!-- Copyright 2017-2018 Maxime Louet - GitHub repository: https://github.com/maximelouet/blih-web -->
+<html lang="en" class="no-js">
 <head>
     <meta charset="utf-8">
     <title>BLIH Web</title>
+    <script>document.documentElement.className = 'first-loading';</script>
     <link rel="stylesheet" type="text/css" href="<%= cssPath %>">
+    <link rel="preload" href="<%= jsPath %>" as="script">
     <meta name="description" content="Web interface for BLIH, the EPITECH repository management tool. Visualize, create, and modify your repositories from a lightweight and responsive web page.">
     <meta name="twitter:card" value="summary">
     <meta property="og:title" content="BLIH Web">
@@ -19,58 +21,41 @@
     <link rel="manifest" href="/manifest.json">
 </head>
 <body>
-<header id="header">
-    <h1><a href="/" onclick="if (Guser != false) { event.preventDefault(); refreshRepolist(); this.blur(); }" id="brand">BLIH Web</a></h1>
-    <div id="loader"></div>
-    <button class="logout" title="Logout" onclick="event.preventDefault(); handleError(false); loader(true); window.location.href='/';"><i class="i i-sign-out"></i></button>
-    <span id="logged-in-user"></span>
+
+<header>
+    <div class="content-container" id="header">
+        <h1><a href="/" id="brand">BLIH Web</a></h1>
+        <div id="loader"></div>
+    </div>
 </header>
-<div id="info-container" class="info-container hidden" onclick="infoHandle('hidden', false); this.blur();" title="Click to dismiss"></div>
-<main id="main">
-    <section id="login">
-        <h2>Login</h2>
-        <p>Please enter your Epitech login and password to continue.</p>
-        <form onsubmit="event.preventDefault(); login(); return false;">
-            <label for="login-user">Login</label>
-            <input type="text" placeholder="firstname.lastname" id="login-user" value="<%= login %>" autocomplete="off"<% if (!login) { %> autofocus<% } %>>
-            <label for="login-pass">Password</label>
-            <input type="password" placeholder="Epitech password" id="login-pass" autocomplete="current-password" <% if (login) { %> autofocus<% } %>>
-            <% if (login) { %>
-            <input type="hidden" name="saved_login" id="saved_login" value="<%= login %>">
-            <a href="/forgetme" id="forget-me" onclick="event.preventDefault(); forgetMe();">Forget my login</a>
-            <% } %>
-            <button class="btn bg-green" type="submit" onclick="event.preventDefault(); login(); return false;">Login <i class="i i-right"></i></button>
-        </form>
-    </section>
-    <section id="repos">
-        <h2>Repositories</h2>
-        <button class="btn bg-green repo-create" onclick="event.preventDefault(); showRepoCreate();">Create <i class="i i-plus"></i></button>
-        <ul id="repolist"></ul>
-        <button class="btn bg-green repo-create" onclick="event.preventDefault(); showRepoCreate();">Create <i class="i i-plus"></i></button>
-    </section>
+
+<div id="user-info" class="hidden" title="Click to dismiss"></div>
+
+<main id="main" class="content-container">
+    <h2>Login</h2>
+    <p>Please enter your Epitech login and password to continue.</p>
+    <form id="login-form">
+        <label for="login-user">Login</label>
+        <input type="text" placeholder="firstname.lastname" id="login-user" autocomplete="username">
+        <label for="login-pass">Password</label>
+        <input type="password" placeholder="Epitech password" id="login-pass" autocomplete="current-password">
+        <button class="btn bg-green" type="submit" id="login-submit">Login <i class="i-right i-ar"></i></button>
+    </form>
 </main>
 
-<aside class="modal">
-    <div class="modal-inner">
-        <a data-modal-close>&times;</a>
-        <h3 id="modal-title"></h3>
-        <div class="modal-content"></div>
-        <div id="modal-act"></div>
-    </div>
-</aside>
-
-<div id="logged-in-dom"></div>
-
 <footer>
-    <p>Created with <svg class="a-beautiful-heart" style="width: 1em;" viewBox="0 0 32 29.6"><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://saumon.io">Maxime Louet</a> (EPITECH Paris 2021).</p>
-    <a class="bmc-button" target="_blank" href="https://www.buymeacoffee.com/tu8WZ6wzQ"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg" alt="Buy me a coffee"><span style="margin-left:5px">Buy me a coffee</span></a>
-    <p>Version <%= version %>.</p>
-    <p class="log-info">We log your username, the URL of the BLIH requests you trigger, and the HTTP response code from BLIH. That's all.</p>
-    <p><a href="/blih.py" download="blih.py">Download BLIH python script</a></p>
-    <p><a href="https://github.com/maximelouet/blih-web">View this project on GitHub</a></p>
+    <div class="content-container">
+        <p>Created with <svg class="a-beautiful-heart" style="width: 1em;" viewBox="0 0 32 29.6" ><path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2 c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/></svg> by <a href="https://saumon.io">Maxime Louet</a> (EPITECH Paris 2021).</p>
+        <p>Version <%= version %> (<a href="https://github.com/maximelouet/blih-web/blob/master/CHANGELOG.md" title="See changelog on GitHub">changelog</a>)</p>
+        <p class="log-info">We log your username, the URL of the BLIH requests you trigger, and the HTTP response code from BLIH. That's all.</p>
+        <p><a href="/blih.py" download="blih.py">Download BLIH python script</a></p>
+        <p><a href="https://github.com/maximelouet/blih-web">View this project on GitHub</a></p>
+    </div>
 </footer>
-<script src="<%= modalPath %>"></script>
+
+<script>const SCRIPT_MODAL_PATH = "<%= modalPath %>";</script>
 <script src="<%= jsPath %>"></script>
 <script src="<%= meowPath %>"></script>
+
 </body>
 </html>
