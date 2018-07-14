@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Maxime Louet
+ * Copyright 2017-2018 Maxime Louet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,33 +18,37 @@
  * GitHub repository: https://github.com/maximelouet/blih-web
  */
 
-var express = require('express')
-var bodyParser = require('body-parser')
-var request = require('request')
-var cookieParser = require('cookie-parser')
-var path = require('path');
-var staticify = require('staticify')(path.join(__dirname, 'public'));
+const express = require('express')
+const bodyParser = require('body-parser')
+const request = require('request')
+const path = require('path');
+const staticify = require('staticify')(path.join(__dirname, 'public'));
 
-var app = express()
+const app = express()
 
 app.disable('x-powered-by')
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cookieParser())
 app.use(staticify.middleware);
 
-let VERSION = '1.8.3'
-let SERVER_PORT = 1337
+const VERSION = '2.0.0-BETA'
+const SERVER_PORT = 1337
 
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
     res.render(__dirname + '/public/index.ejs', {
         version: VERSION,
-        login: req.cookies.saved_login,
         cssPath: staticify.getVersionedPath('/blih-web.css'),
         jsPath: staticify.getVersionedPath('/blih-web.js'),
         meowPath: staticify.getVersionedPath('/meow.js'),
         modalPath: staticify.getVersionedPath('/modal.js')
     })
+})
+
+app.get(/^\/(repositories|sshkeys)/, (req, res) => {
+    res.redirect('/')
+})
+app.get(/^\/(repository-create|sshkey-upload)$/, (req, res) => {
+    res.redirect('/')
 })
 
 function pad(n) {
@@ -53,138 +57,209 @@ function pad(n) {
 
 function log(message) {
     var d = new Date();
-    console.log(pad(d.getFullYear()) + '-' + pad(d.getMonth() + 1)  + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + message);
+    console.log(pad(d.getFullYear()) + '-' +
+        pad(d.getMonth() + 1) + '-' +
+        pad(d.getDate()) + ' ' +
+        pad(d.getHours()) + ':' +
+        pad(d.getMinutes()) + ':' +
+        pad(d.getSeconds()) + ' ' +
+        message);
+}
+
+function interpret_response(method, url, response) {
+    if (method == 'GET' && url == '/repositories') {
+        let repos = []
+        for (let repo in response.repositories) {
+            repos.push({
+                name: repo,
+                uuid: response.repositories[repo].uuid
+            })
+        }
+        repos.sort( (a, b) => {
+            return (a.name.toUpperCase() > b.name.toUpperCase()) ? 1 : ((b.name.toUpperCase() > a.name.toUpperCase()) ? -1 : 0)
+        })
+        return (repos)
+    }
+    else if (method == 'GET' && url == '/sshkeys') {
+        let keys = []
+        for (let key in response) {
+            keys.push({
+                name: key,
+                content: response[key]
+            })
+        }
+        keys.sort( (a, b) => {
+            return (a.name.toUpperCase() > b.name.toUpperCase()) ? 1 : ((b.name.toUpperCase() > a.name.toUpperCase()) ? -1 : 0)
+        })
+        return (keys)
+    }
+    else if (method == 'GET' && url.startsWith('/repository/') && !url.endsWith('/acls')) {
+        return ({
+            uuid: response.message.uuid,
+            creation_time: response.message.creation_time,
+            description: response.message.description
+        })
+    }
+    else if (method == 'GET' && url.startsWith('/repository/') && url.endsWith('/acls')) {
+        let acls = []
+        for (let acl in response) {
+            acls.push({
+                user: acl,
+                rights: response[acl]
+            })
+        }
+        acls.sort( (a, b) => {
+            return (a.user.toUpperCase() > b.user.toUpperCase()) ? 1 : ((b.user.toUpperCase() > a.user.toUpperCase()) ? -1 : 0)
+        })
+        let final = {};
+        for (let acl in acls) {
+            final[acls[acl].user] = acls[acl].rights;
+        }
+        return (final)
+    }
+    else if (
+        (method == 'DELETE' && url.startsWith('/repository/')) ||
+        (method == 'POST' && url.startsWith('/repository/') && url.endsWith('/acls'))) {
+        return (null)
+    }
+    else {
+        return (response)
+    }
+}
+
+function interpret_error(method, url, response) {
+    return (response)
+}
+
+function interpret_server_error(error) {
+    let result = {
+        code: 502,
+        body: '{"error":"Request to BLIH Server failed."}'
+    }
+    if (error.code === 'ETIMEDOUT') {
+        log('Error: request to BLIH server timed out.')
+        result.code = 504
+        result.body = '{"error":"Request to BLIH server timed out."}'
+    }
+    else if (error.connect === true) {
+        log('Error: unable to connect to BLIH server.')
+        result.code = 502
+        result.body = '{"error":"Unable to connect to BLIH server."}'
+    }
+    return (result)
 }
 
 
 // BLIH Web API
 
-function blih(httpmethod, url, signed_data, sortrepos, res) {
-
-    var body
+function blih(method, url, signed_data, res) {
 
     try {
         parsed_body = JSON.parse(signed_data)
-    } catch(e) {
+    }
+    catch(e) {
         log('Error: invalid client parameters (signed data).')
-        res.status(400).send('{"ERROR":"Invalid parameters (signed data)"}')
+        res.status(400).send('{"error":"Invalid parameters (signed data)"}')
         return;
     }
 
-    var options = {
+    if (url == '/sshkeys' && method == 'POST' && parsed_body.data.sshkey) {
+        parsed_body.data.sshkey = encodeURIComponent(parsed_body.data.sshkey).replace(/\%2F/g, '/')
+    }
+
+    const options = {
         headers: {
             'Accept-Encoding': 'identity',
             'Connection': 'close',
             'User-Agent': 'blih-web-' + VERSION
         },
         json: true,
-        method: httpmethod,
+        method: method,
         url: 'https://blih.epitech.eu' + url,
-        body: parsed_body
+        body: parsed_body,
+        timeout: 10000
     }
 
-    request(options, function (error, response, body) {
-        if (!error) {
-            if (sortrepos && response.statusCode == 200) {
-                var repos = []
-                for (var repo in body.repositories)
-                    repos.push(repo)
-                repos.sort(function (a, b) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase())
-                })
-                res.send(repos)
-            }
-            else
-                res.status(response.statusCode).send(body)
-            var username = '(unknown user)';
-            try {
-                var oui = parsed_body;
-                username = oui.user;
-            }
-            catch (e) {
-                log('Warning: cannot extract username from signed_data.')
-            }
-            log(username + ' ' + httpmethod + ' ' + url + ' (' + response.statusCode + ')')
-        } else {
-            log('Error: request to BLIH server failed.')
-            res.status(500).send('{"ERROR":"Request to BLIH server failed."}')
+    request(options, (error, response, body) => {
+
+        let result = {
+            code: (!error) ? response.statusCode : 0,
+            body: null
         }
+        if (!error) {
+            codeToSend = response.statusCode
+            if (response.statusCode == 200) {
+                result.body = interpret_response(method, url, body)
+            }
+            else {
+                result.body = interpret_error(method, url, body)
+            }
+        }
+        else {
+            result = interpret_server_error(error)
+        }
+
+        res.status(result.code).send(result.body)
+
+        let username = '(unknown user)';
+        try {
+            username = parsed_body.user;
+        }
+        catch (e) {
+            log('Warning: cannot extract username from signed_data.')
+        }
+        log(username + ' ' + method + ' ' + url + ' (' + ((!error) ? response.statusCode : 'error') + ')')
     })
 
 }
 
-app.post('/api/*', function (req, res, next) {
-    if (!req.body.resource || !req.body.signed_data) {
-        log('Error: invalid client parameters (body).')
-        res.status(400).send('{"ERROR":"Invalid parameters (body)."}')
+app.post('/api/*', (req, res, next) => {
+    if (!req.body.signed_data) {
+        log('Error: invalid client parameters.')
+        res.status(400).send('{"error":"Invalid parameters."}')
     }
-    else
+    else {
         next()
-})
-
-app.post('/api/repolist', function (req, res) {
-    blih('GET', '/repositories', req.body.signed_data, true, res)
-})
-app.post('/api/repogetacl', function (req, res) {
-    blih('GET', '/repository/' + req.body.resource + '/acls', req.body.signed_data, false, res)
-})
-app.post('/api/repogetinfo', function (req, res) {
-    blih('GET', '/repository/' + req.body.resource, req.body.signed_data, false, res)
-})
-app.post('/api/repocreate', function (req, res) {
-    blih('POST', '/repositories', req.body.signed_data, false, res)
-})
-app.post('/api/repodel', function (req, res) {
-    blih('DELETE', '/repository/' + req.body.resource, req.body.signed_data, false, res)
-})
-app.post('/api/reposetacl', function (req, res) {
-    blih('POST', '/repository/' + req.body.resource + '/acls', req.body.signed_data, false, res)
-})
-
-
-// Persistent usernames
-
-app.post('/rememberme', function (req, res) {
-    if (req.body.saved_login) {
-        res.cookie('saved_login', req.body.saved_login, { maxAge: 1000 * 60 * 60 * 24 * 365, httpOnly: true })
-        res.status(200).send('OK')
-    } else {
-        res.status(200).send('Nothing done')
-    }
-})
-app.post('/forgetme', function (req, res) {
-    if (req.body.saved_login) {
-        res.clearCookie('saved_login')
-        log(req.body.saved_login + ' FORGET ME')
-        res.status(200).send('OK')
-    } else {
-        res.status(200).send('Nothing done')
     }
 })
 
+app.post('/api/repo/list', (req, res) => {
+    blih('GET', '/repositories', req.body.signed_data, res)
+})
+app.post('/api/repo/getacl', (req, res) => {
+    blih('GET', '/repository/' + encodeURIComponent(req.body.resource) + '/acls', req.body.signed_data, res)
+})
+app.post('/api/repo/setacl', (req, res) => {
+    blih('POST', '/repository/' + encodeURIComponent(req.body.resource) + '/acls', req.body.signed_data, res)
+})
+app.post('/api/repo/getinfo', (req, res) => {
+    blih('GET', '/repository/' + encodeURIComponent(req.body.resource), req.body.signed_data, res)
+})
+app.post('/api/repo/create', (req, res) => {
+    blih('POST', '/repositories', req.body.signed_data, res)
+})
+app.post('/api/repo/delete', (req, res) => {
+    blih('DELETE', '/repository/' + encodeURIComponent(req.body.resource), req.body.signed_data, res)
+})
 
-// Static files
-
-app.get('/dom', function (req, res) {
-    res.sendFile(__dirname + '/public/dom.html')
+app.post('/api/ssh/list', (req, res) => {
+    blih('GET', '/sshkeys', req.body.signed_data, res)
 })
-app.get('/blih.py', function (req, res) {
-    res.sendFile(__dirname + '/public/blih.py')
+app.post('/api/ssh/upload', (req, res) => {
+    blih('POST', '/sshkeys', req.body.signed_data, res)
 })
-app.get('/favicon.png', function (req, res) {
-    res.sendFile(__dirname + '/public/favicon.png')
-})
-app.get('/manifest.json', function (req, res) {
-    res.sendFile(__dirname + '/public/manifest.json')
+app.post('/api/ssh/delete', (req, res) => {
+    blih('DELETE', '/sshkey/' + encodeURIComponent(req.body.resource), req.body.signed_data, res)
 })
 
-app.use(function (req, res, next) {
+
+app.use( (req, res, next) => {
     res.status(404).send('Nothing here!')
 })
 
 
 // Main server
 
-app.listen(SERVER_PORT, function () {
+app.listen(SERVER_PORT, () => {
     log('Started BLIH Web v' + VERSION + ' on port ' + SERVER_PORT + '.')
 })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Maxime Louet
+ * Copyright 2017-2018 Maxime Louet
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,756 +18,1729 @@
  * GitHub repository: https://github.com/maximelouet/blih-web
  */
 
-var Guser = false;
-var Ghashedp = false;
-var actDisabled = false;
-var loaderTimeout = false;
+'use strict';
 
-var repoLoadingInfoCompleted = true;
-var repoLoadingAclCompleted = true;
+// Global loading indicator to prevent double actions
+let LOADING = false;
 
-const modal = new VanillaModal.default({
-    loadClass: 'modal-ok',
-    onBeforeOpen: function(){infoHandle('hidden', false)}
-});
+// Store user information for future requests
+let USER = {
+    login: null,
+    short_login: null,
+    hashed_password: null
+};
 
-function updateConnectivity() {
-    if (navigator.onLine) {
-        document.getElementById('header').className = 'online';
-        actDisabled = false;
-        document.documentElement.classList.remove('act-disabled');
-    } else {
-        document.getElementById('header').className = 'offline';
-        actDisabled = true;
-        document.documentElement.classList.add('act-disabled');
+// Repository list
+let REPOSITORIES = [];
+/* structure:
+    [index]: repo id, NOT uuid
+    name: repo name,
+    uuid: BLIH UUID,
+    recent: bool isJustCreated
+*/
+// Store repositories that have been created during the session (not opened yet)
+let LASTREPOSCREATED = [];
+// Store last update timestamp from BLIH server
+let LASTREPOUPDATE = 0;
+
+let LASTACTIONTIME = 0;
+
+// SSH keys list
+let SSHKEYS = [];
+/* structure:
+    [index]: sshkey id, NOT uuid
+    name: sshkey comment,
+    content: sshkey file content,
+    recent: bool isJustUploaded
+*/
+// Store SSH keys that have been uploaded during the session (not opened yet)
+let LASTSSHUPLOADED = [];
+// Store last update timestamp from BLIH server
+let LASTSSHUPDATE = 0;
+
+// Current ACL representation
+let ACL = [];
+/* structure:
+    [index]: ACL li id, NOT uuid
+    user: login
+    r: true/false
+    w: true/false
+    a: true/false
+*/
+
+// VanillaModalJS object, populated on login
+let modal = false;
+
+// Prevent history state reset on repo Delete button click in repo view modal
+let noURLChange = false;
+
+// Array of current XHR requests, used to cancel them if needed
+let CURRENT_REQUESTS = [];
+
+
+/******************************************************************************
+ * Helper functions
+ */
+
+const e = id => {
+    return (document.getElementById(id));
+}
+
+const c = type => {
+    return (document.createElement(type));
+}
+
+function removeFromArray(array, element)
+{
+    const index = array.indexOf(element);
+    if (index !== -1) {
+        array.splice(index, 1);
     }
 }
 
-window.addEventListener('online',  updateConnectivity);
-window.addEventListener('offline', updateConnectivity);
-setTimeout(updateConnectivity, 200);
+function getRealLogin(login)
+{
+    let realLogin = login.trim();
+    const oldUserRegex = /^\D+_\D$/;
+    if (!realLogin.endsWith("@epitech.eu") && !oldUserRegex.test(realLogin) && realLogin != 'ramassage-tek')
+        realLogin += "@epitech.eu";
+    return (realLogin);
+}
 
+function getShortLogin(realLogin)
+{
+    let shortLogin = realLogin;
+    if (shortLogin.endsWith("@epitech.eu"))
+        shortLogin = shortLogin.slice(0, -11);
+    return (shortLogin);
+}
 
-var decodeEntities = (function() {
-    // this prevents any overhead from creating the object each time
-    var element = document.createElement('div');
-    function decodeHTMLEntities (str) {
-        if (str && typeof str === 'string') {
-            // strip script/html tags
-            str = str.replace(/<script[^>]*>([\S\s]*?)<\/script>/gmi, '');
-            str = str.replace(/<\/?\w(?:[^"'>]|"[^"]*"|'[^']*')*>/gmi, '');
-            element.innerHTML = str;
-            str = element.textContent;
-            element.textContent = '';
-        }
-        return str;
+function preventDefaults(e)
+{
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+/******************************************************************************
+ * DOM helper functions
+ */
+
+function clearElm(elm)
+{
+    while (elm.lastChild) {
+        elm.removeChild(elm.lastChild);
     }
-    return decodeHTMLEntities;
-})();
+}
+function replaceChildren(elm, otherElm)
+{
+    clearElm(elm);
+    while (otherElm.childNodes.length) {
+        elm.appendChild(otherElm.childNodes[0]);
+    }
+}
+function replaceElmWithDOM(elm, documentFragment)
+{
+    clearElm(elm);
+    elm.appendChild(documentFragment);
+}
+function replaceElmWithText(elm, text)
+{
+    clearElm(elm);
+    elm.appendChild(document.createTextNode(text));
+}
 
-function htmlEntities(str) {
+function htmlEntities(str)
+{
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function escapeQuotes(str) {
-    return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '&apos;');
-}
-function escapeQuotesBack(str) {
-    return String(str).replace(/\"/g, '&quot;').replace(/\'/g, '\\\'');
+
+function historyPush(title, url)
+{
+    let newTitle = title + ' - BLIH Web';
+    history.pushState(null, newTitle, url);
+    document.title = newTitle;
 }
 
-function switchModal(oldm, newm, newtitle, newact) {
-    hideModal(oldm);
-    setTimeout(function(){showModal(newm, newtitle, newact)}, 300);
+
+/******************************************************************************
+ * Remember me
+ */
+
+function forgetMe()
+{
+    const savedLogin = localStorage.getItem('savedLogin');
+    localStorage.removeItem('savedLogin');
+    let userInput = e('login-user');
+    userInput.value = '';
+    userInput.focus();
+    e('login-pass').value = '';
+    e('login-form').removeChild(e('forget-me'));
 }
 
-function showModal(id, name, actText) {
-    var actElm = document.getElementById('modal-act');
-    document.getElementById('modal-title').innerHTML = htmlEntities(name);
-    if (actText == false) {
-        actElm.className = '';
-        actElm.innerHTML = '';
+function rememberMe(username)
+{
+    localStorage.setItem('savedLogin', username);
+}
+
+function showSavedLogin()
+{
+    const savedLogin = localStorage.getItem('savedLogin');
+    let userInput = e('login-user');
+    let passInput = e('login-pass');
+    if (savedLogin) {
+        userInput.value = savedLogin;
+        passInput.focus();
+        let forgetMeElm = c('a');
+        forgetMeElm.id = 'forget-me';
+        forgetMeElm.addEventListener('click', (evt) => {
+            evt.preventDefault();
+            forgetMe();
+        });
+        forgetMeElm.innerHTML = 'Forget my login';
+        e('login-form').insertBefore(forgetMeElm, e('login-submit'));
     }
     else {
-        actElm.className = 'shown';
-        actElm.innerHTML = actText;
+        userInput.focus();
     }
-modal.open('#modal-' + id);
-}
-function hideModal(id) {
-    modal.close('#modal-' + id);
 }
 
-function checkRepoConfirm(wanted, entered, button) {
-    if (escapeQuotes(wanted) == escapeQuotes(entered).valueOf())
+if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading"){
+    showSavedLogin();
+}
+else {
+    document.addEventListener('DOMContentLoaded', showSavedLogin);
+}
+
+
+
+
+/******************************************************************************
+ * Modal helper functions
+ */
+
+function showModal(id, name)
+{
+    replaceElmWithText(e('modal-title'), name);
+    modal.open('#modal-' + id);
+}
+function hideModal(id)
+{
+    modal.close('#modal-' + id);
+}
+function closeCurrentModal()
+{
+    if (modal.current)
+        modal.close('#' + modal.current.id);
+}
+
+function checkRepoConfirm(evt)
+{
+    let userValue = evt.target.value;
+    let button = e('act-repo-confirmdelete');
+    if (userValue == REPOSITORIES[modal.current.dataset.repoId].name)
         button.disabled = false;
     else
         button.disabled = true;
 }
 
-function enableAct() {
-    if (!actDisabled) {
+
+/******************************************************************************
+ * Page loading
+ */
+
+function enableAct()
+{
+    if (!LOADING) {
         document.documentElement.classList.remove('act-disabled');
     }
 }
 
-function loader(active) {
-    clearTimeout(loaderTimeout);
-    if (active)
-    {
-        actDisabled = true;
+function loader(active)
+{
+    if (active) {
+        loader.count++;
+        LOADING = true;
         document.documentElement.classList.add('loading');
         document.documentElement.classList.add('act-disabled');
-        loaderTimeout = setTimeout(function(){ loader(false); }, 15000);
     }
-    else
-    {
-        actDisabled = false;
-        document.documentElement.classList.remove('loading');
-        setTimeout(enableAct, 200);
-        clearTimeout(loaderTimeout);
+    else {
+        loader.count--;
+        if (loader.count <= 0) {
+            loader.count = 0;
+            LOADING = false;
+            document.documentElement.classList.remove('loading');
+            setTimeout(enableAct, 400);
+        }
     }
 }
 
-function infoHandle(cclass, ccontent) {
-    var container = document.getElementById('info-container');
-    container.className = 'info-container ' + cclass;
+/******************************************************************************
+ * Autologout checking
+ */
+
+function updateLastActionTime()
+{
+    LASTACTIONTIME = Math.floor(Date.now() / 1000);
+}
+
+function checkAutologout()
+{
+    if (isOutdated(LASTACTIONTIME, 60)) {
+        localStorage.setItem('autologout', true);
+        logout();
+    }
+}
+
+
+/******************************************************************************
+ * Success and error messages
+ */
+
+function userInfo(cclass, ccontent)
+{
+    var container = e('user-info');
+    container.className = cclass;
     if (ccontent)
         container.innerHTML = ccontent;
-}
-
-function handleError(open, msg) {
-    if (open)
-        infoHandle('bg-red', msg);
     else
-        infoHandle('hidden', false);
+        container.innerHTML = '';
 }
 
-function handleSuccess(open, msg) {
-    if (open)
-        infoHandle('bg-green', msg);
-    else
-        infoHandle('hidden', false);
+function showError(msg)
+{
+    if (msg === false) {
+        userInfo('hidden', null);
+    }
+    else {
+        userInfo('bg-red', msg);
+    }
+}
+function showSuccess(msg)
+{
+    if (msg === false) {
+        userInfo('hidden', null);
+    }
+    else {
+        userInfo('bg-green', msg);
+    }
 }
 
-function computeRepoList(response) {
-    var repoList = '';
-    for (repo in response)
-    {
-        if (response.hasOwnProperty(repo))
-        {
-            repo = htmlEntities(response[repo]);
-            if (!repo) {
-                repoList += '<li class="no-name">';
-                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'\');"><span> </span></a>';
-                repoList += '<button class="btn" onclick="event.preventDefault(); repoOpen(\'\');"><i class="i i-times"></i></button>';
-            } else {
-                repoList += (repo.toUpperCase() == 'BITE') ? '<li class="bite">' : '<li>';
-                repoList += '<a href="#" onclick="event.preventDefault(); repoOpen(\'' + escapeQuotesBack(repo) + '\');"><span>' + repo + '</span></a>';
-                repoList += '<button class="btn" title="Delete this repository" onclick="event.preventDefault(); promptDelete(\'' + escapeQuotesBack(repo) + '\');"><i class="i i-times"></i></button>';
-            }
-            repoList += '</li>\n';
+
+/******************************************************************************
+ * Repolist functions
+ */
+
+// Populates the global REPOSITORIES variable
+// @param response JSON BLIH server response
+function generateRepoList(response)
+{
+    REPOSITORIES = [];
+    for (let repo in response) {
+        if (response.hasOwnProperty(repo)) {
+            REPOSITORIES.push({
+                name: response[repo].name,
+                uuid: response[repo].uuid,
+                recent: (LASTREPOSCREATED.includes(response[repo].name))
+            });
         }
+        else
+            throw new Error("DAFUQISDAT " + response[repo] + " (raw is " + repo + ')');
+    }
+}
+
+// Creates DOM of repository list
+// Uses the global REPOSITORIES variable
+// @return documentFragment containing all li elements
+function createRepoListDOM()
+{
+    let repoList = document.createDocumentFragment();
+    for (var i = 0; i < REPOSITORIES.length; i++) {
+        let repo = REPOSITORIES[i];
+        let li = c('li');
+        li.dataset.id = i;
+        if (repo.name === '')
+            li.classList.add('no-name');
+        if (repo.name.toUpperCase() == 'BITE')
+            li.classList.add('bite');
+        if (repo.recent)
+            li.classList.add('recent');
+        let a = c('a');
+        a.tabIndex = 0;
+        let span = c('span');
+        let spanText;
+        if (repo.name === '')
+            spanText = document.createTextNode(' ');
+        else
+            spanText = document.createTextNode(repo.name);
+        span.appendChild(spanText);
+        a.appendChild(span);
+        li.appendChild(a);
+        let button = c('button');
+        let iElm = c('i');
+        iElm.className = 'i-cross';
+        button.appendChild(iElm);
+        li.appendChild(button);
+        repoList.appendChild(li);
     }
     return repoList;
 }
 
-function refreshRepolist() {
-    repoList(function (success, status, response) {
-        if (success && !response.hasOwnProperty('error'))
-        {
-            var repoList = computeRepoList(response);
-            document.getElementById('repolist').innerHTML = repoList;
-        }
-        else
-            handleError(true, 'An error occured.');
-        loader(false)
-    });
+function printRepoListDOM()
+{
+    let repoList = createRepoListDOM();
+    let repoListElm = e('repolist');
+    clearElm(repoListElm);
+    repoListElm.appendChild(repoList);
+    if (REPOSITORIES.length > 0)
+        repoListElm.classList.remove('empty');
+    LASTREPOUPDATE = Math.floor(Date.now() / 1000);
+    replaceElmWithText(e('repo-total-count'), 'Total: ' + REPOSITORIES.length + ' repositor' + ((REPOSITORIES.length == 1) ? 'y' : 'ies'));
 }
 
-function repoList(callback) {
-    retrieve('repolist', false, false, callback);
-}
-function repoGetAcl(repo, callback) {
-    retrieve('repogetacl', repo, false, callback);
-}
-function repoGetInfo(repo, callback) {
-    retrieve('repogetinfo', repo, false, callback);
-}
-function repoDelete(repo) {
-    retrieve('repodel', repo, false, function (success, status, response) {
-        if (success && response.hasOwnProperty('message') && response.message == 'Repository deleted')
-        {
-            hideModal('repo-delete');
-            setTimeout(function(){handleSuccess(true, 'The repository <strong>' + htmlEntities(repo) + '</strong> has been deleted.')}, 100);
-            refreshRepolist();
-        }
-        else
-        {
-            handleError(true, 'An error occured while trying to delete the repository.');
-        }
-        loader(false);
-    });
+function generateAndShowRepoList(serverResponse)
+{
+    generateRepoList(serverResponse);
+    printRepoListDOM();
 }
 
-function retrieve(url, resource, data, callback) {
-    loader(true);
-    var signeddata = {user: Guser};
-    var signature = new jsSHA("SHA-512", "TEXT");
-    signature.setHMACKey(Ghashedp, "TEXT");
-    signature.update(Guser);
-    if (data != false)
-    {
-        signeddata['data'] = data;
-        signature.update(JSON.stringify(data, null, 4));
-    }
-    signeddata['signature'] = signature.getHMAC("HEX");
-    if (resource == false)
-        resource = 'kappa';
-    var params = 'resource=' + encodeURIComponent(resource) + '&signed_data=' + encodeURIComponent(JSON.stringify(signeddata));
-    var r = new XMLHttpRequest();
-    r.onreadystatechange = function() {
-        loader(true);
-        if (r.readyState == 4) {
-            if (callback && typeof(callback) === "function") {
-                var success = false;
-                var data = r.responseText;
-                if (r.status == 200 || r.status == 404) {
-                    var parsed = JSON.parse(data);
-                    if (!parsed.hasOwnProperty('ERROR'))
-                    {
-                        success = true;
-                        data = parsed;
-                    }
-                }
-                callback(success, r.status, data);
-            }
-        }
-    };
-    r.open('POST', '/api/' + url);
-    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-    r.send(params);
-}
-
-function rememberMe(username) {
-    loader(true);
-    var params = 'saved_login=' + encodeURIComponent(username);
-    var r = new XMLHttpRequest();
-    r.open('POST', '/rememberme');
-    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-    r.send(params);
-}
-function forgetMe() {
-    var loginInput = document.getElementById('login-user');
-    var saved_login = document.getElementById('saved_login').value;
-    var params = 'saved_login=' + encodeURIComponent(saved_login);
-    var r = new XMLHttpRequest();
-    r.onreadystatechange = function() {
-        if (r.readyState == 4) {
-            location.reload();
-        }
-        loader(true);
-    };
-    r.open('POST', '/forgetme');
-    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-    loader(true);
-    r.send(params);
-}
-
-
-function promptDelete(repo) {
-    document.getElementById('repo-delete-confirmname').value = '';
-    showModal('repo-delete', repo, '<button class="btn bg-red" id="repo-delete-confirmbutton" onclick="event.preventDefault(); repoDelete(decodeEntities(document.getElementById(\'modal-title\').innerHTML));" disabled>Confirm deletion</button>');
-    document.getElementById('repo-delete-confirmname').focus();
-}
-
-function handleSaveAcl(success) {
-    if (success)
-        handleSuccess(true, "The specified ACLs have been applied.");
-}
-
-
-function repoOpen(name) {
-    loader(true);
-    handleError(false);
-    var repoinfo = document.getElementById('repo-info');
-    var repoinfoacl = document.getElementById('repo-info-acl-container');
-    if (!name) { // fix for repositories with empty names
-        repoinfo.innerHTML = '<p class="repo-open-error">This repository has an empty name, we can\'t access their data through BLIH\'s API.</p>';
-        repoinfoacl.innerHTML = '';
-        showModal('repo-info', '(no name)', '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" disabled onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>');
-        loader(false);
-        return;
-    }
-    repoLoadingInfoCompleted = false;
-    repoLoadingAclCompleted = false;
-    repoinfo.innerHTML = '<span>Loading repository info...</span>';
-    repoinfoacl.innerHTML = '<p>ACLs <button class="btn acl-add bg-green" onclick="event.preventDefault(); aclAdd(\'repo-info-acl\', \'\', \'\', true);" title="Add an ACL"> + </button></p><ul id="repo-info-acl" class="acl-list" data-aclnb="0" data-acltorem=""><span>Loading...</span></ul>';
-    showModal('repo-info', name, '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault(); repoSetAllAcl(decodeEntities(document.getElementById(\'modal-title\').innerHTML), \'repo-info-acl\', handleSaveAcl);"><i class="i i-refresh"></i> Save ACLs</button><button class="btn bg-red" title="You will be prompted for a confirmation" onclick="event.preventDefault(); hideModal(\'repo-info\'); setTimeout(function(){promptDelete(\'' + escapeQuotesBack(name) + '\');}, 200);"><i class="i i-trash"></i> Delete</button>');
-    repoGetInfo(name, function(success, status, response) {
-        repoLoadingInfoCompleted = true;
-        if (success && response.hasOwnProperty('error')) {
-            repoinfo.innerHTML = '<p class="repo-open-error">' + response['error'] + '</p>';
-            repoinfoacl.innerHTML = '';
-            document.getElementById('modal-act').innerHTML = '<button disabled class="btn bg-green" id="save-acl" onclick="event.preventDefault();"><i class="i i-refresh"></i> Save ACLs</button><button disabled class="btn bg-red" onclick="event.preventDefault();"><i class="i i-trash"></i> Delete</button>';
-            if (repoLoadingAclCompleted)
-                loader(false);
-        }
-        else if (success && response.message && response.message.hasOwnProperty('creation_time') && response.message.hasOwnProperty('uuid')) {
-            var date = new Date(parseInt(response.message['creation_time']) * 1000);
-            repoinfo.innerHTML = '<b>Created</b>: ' + date.getDate() + ' ' + date.toLocaleString("en-us", { month: "long" }).toLowerCase() + ' ' + date.getFullYear() + '<br>' + '<b>UUID</b>: ' + response.message['uuid'];
-            if (repoLoadingAclCompleted)
-                loader(false);
-        }
-        else {
-            repoinfoacl.innerHTML = '';
-            handleError(true, 'An error occured');
-        }
-    });
-    repoGetAcl(name, function(success, status, response) {
-        repoLoadingAclCompleted = true;
-        if (success)
-        {
-            if (response.hasOwnProperty('error')) {
-                document.getElementById('repo-info-acl').innerHTML = '<span>(' + response.error + ')</span>';
-            }
-            else
-            {
-                for (key in response)
-                {
-                    if (response.hasOwnProperty(key))
-                        aclAdd('repo-info-acl', key, response[key], false);
-                }
-            }
-            if (repoLoadingInfoCompleted)
-                loader(false);
-        }
-        else
-            handleApiError(status, response);
-    });
-}
-
-function repoCreate(name, aclRootElmId) {
-    if (!name)
-    {
-        handleError(true, 'The name cannot be empty!');
-        return;
-    }
-    if (name.length > 84)
-    {
-        handleError(true, 'The name cannot exceed 84 characters!');
-        return;
-    }
-    var repoinfo = { name: name, type: 'git' };
-    retrieve('repocreate', false, repoinfo, function(success, status, response) {
-        if (success)
-        {
-            repoSetAllAcl(name, aclRootElmId, function(success) {
-                if (success)
-                {
-                    refreshRepolist();
-                    hideModal('repo-create');
-                    handleSuccess(true, 'The repository <strong>' + htmlEntities(name) + '</strong> has been created with the specified ACLs.');
-                }
-            });
-        }
-        else
-        {
-            handleApiError(status, response);
-            loader(false);
-        }
-    });
-}
-
-function handleApiError(status, response) {
-    loader(false);
-    if (status == 0)
-        handleError(true, "An error occured while connecting to the server.");
-    else
-    {
-        try {
-            response = JSON.parse(response);
-            if (response.hasOwnProperty('error'))
-                handleError(true, response.error);
-            else if (response.hasOwnProperty('message'))
-                handleError(true, response.message);
-            else
-                handleError(true, 'An unknown error has occured.');
-        }
-        catch (err) {
-            console.log(Error("RIP RIP RIP RIP"));
-            handleError(true, "An unknown error has occured.");
-        }
-    }
-}
-
-function getFormAcl(dataId) {
-    var checkboxes = document.getElementsByName(dataId + '-perm');
-    var checked = [];
-    for (var i=0; i<checkboxes.length; i++) {
-        if (checkboxes[i].checked) {
-            checked.push(checkboxes[i].value);
-        }
-    }
-    return checked.join('');
-}
-
-
-function getDOM(callback)
+function refreshRepoList()
 {
     loader(true);
-    var r = new XMLHttpRequest();
-    r.onreadystatechange = function() {
-        loader(true);
-        if (r.readyState == 4 && r.status == 200) {
-            document.getElementById('logged-in-dom').innerHTML = r.responseText;
-            callback();
-        }
-        else if (r.readyState == 4) {
-            handleError(true, 'An unknown error occured.');
-        }
-    };
-    r.open('GET', '/dom');
-    r.send();
-}
-
-function getRealUser(username) {
-    username = username.trim();
-    if (!username.endsWith("@epitech.eu"))
-        username += "@epitech.eu";
-    return (username);
-}
-
-function login() {
-    if (actDisabled)
-        return;
-    loader(true);
-    handleError(false);
-    var username = document.getElementById('login-user').value;
-    var password = document.getElementById('login-pass').value;
-    if (username.length < 5 || password.length < 3)
-    {
-        handleError(true, 'Invalid username/password.');
+    replaceElmWithText(e('repo-total-count'), 'Loading...');
+    retrieve('repo/list')
+    .then( (response) => {
+        generateAndShowRepoList(response.data);
         loader(false);
+    });
+}
+
+
+/******************************************************************************
+ * SSH keys list functions
+ */
+
+// Populates the global SSHKEYS variable
+// @param response JSON BLIH server response
+function generateSSHList(response)
+{
+    SSHKEYS = [];
+    for (let key in response) {
+        SSHKEYS.push({
+            name: response[key].name,
+            content: response[key].content,
+            recent: (LASTSSHUPLOADED.includes(response[key].name))
+        });
+    }
+}
+
+// Creates DOM of repository list
+// Uses the global SSHKEYS variable
+// @return documentFragment containing all li elements
+function createSSHListDOM()
+{
+    let SSHList = document.createDocumentFragment();
+    for (var i = 0; i < SSHKEYS.length; i++) {
+        let key = SSHKEYS[i];
+        let li = c('li');
+        li.dataset.id = i;
+        if (key.recent)
+            li.classList.add('recent');
+        let a = c('a');
+        let span = c('span');
+        let spanText;
+        if (key.name === '')
+            spanText = document.createTextNode(' ');
+        else
+            spanText = document.createTextNode(key.name);
+        span.appendChild(spanText);
+        a.appendChild(span);
+        li.appendChild(a);
+        let button = c('button');
+        let iElm = c('i');
+        iElm.className = 'i-cross';
+        button.appendChild(iElm);
+        li.appendChild(button);
+        SSHList.appendChild(li);
+    }
+    return SSHList;
+}
+
+function generateAndShowSSHList(serverResponse)
+{
+    generateSSHList(serverResponse);
+    printSSHListDOM();
+}
+
+function printSSHListDOM()
+{
+    let SSHList = createSSHListDOM();
+    let SSHListElm = e('sshlist');
+    clearElm(SSHListElm);
+    SSHListElm.appendChild(SSHList);
+    if (SSHKEYS.length > 0)
+        SSHListElm.classList.remove('empty');
+    LASTSSHUPDATE = Math.floor(Date.now() / 1000);
+    replaceElmWithText(e('ssh-total-count'), 'Total: ' + SSHKEYS.length + ' SSH key' + ((SSHKEYS.length == 1) ? '' : 's'));
+}
+
+function refreshSSHList()
+{
+    loader(true);
+    replaceElmWithText(e('ssh-total-count'), 'Loading...');
+    retrieve('ssh/list')
+    .then( (response) => {
+        if (!response.ok) {
+            showBlihError(response);
+            loader(false);
+        }
+        generateAndShowSSHList(response.data);
+        loader(false);
+    });
+}
+
+
+/******************************************************************************
+ * BLIH server error messages interpretation
+ */
+
+function showBlihError(data)
+{
+    if (data !== null && typeof data === 'object') {
+        if (data.error) {
+            if (data.error == 'sshkey already exists')
+                showError('An SSH key with this name already exists.');
+            else if (data.error.endsWith('doesn\'t exists'))
+                showError(data.error.replace('doesn\'t exists', 'does not exist.'));
+            else if (data.error == 'No spaces allowed')
+                showError('Spaces are not allowed.');
+            else if (data.error == 'No slash allowed')
+                showError('Slashes are not allowed.');
+            else
+                showError(data.error);
+        }
+        else if (data.message) {
+            showError(data.message);
+        }
+        else {
+            showError(data);
+        }
+    }
+    else {
+        showError(data);
+    }
+}
+
+/******************************************************************************
+ * AJAX requests management
+ */
+
+function addPendingRequest(xhr)
+{
+    CURRENT_REQUESTS.push(xhr);
+}
+
+function removePendingRequest(xhr)
+{
+    CURRENT_REQUESTS = CURRENT_REQUESTS.filter(item => item !== xhr);
+}
+
+function abortAllRequests()
+{
+    let length = CURRENT_REQUESTS.length;
+    if (length > 0) {
+        for (let i = 0; i < length; i++) {
+            CURRENT_REQUESTS[i].abort();
+        }
+        CURRENT_REQUESTS.length = 0;
+        loader.count = 1;
+        loader(false);
+    }
+}
+
+
+/******************************************************************************
+ * AJAX function
+ */
+
+function retrieve(url, resource = undefined, data = undefined)
+{
+    let signedData = {
+        user: USER.login
+    };
+    let signature = new jsSHA('SHA-512', 'TEXT');
+    signature.setHMACKey(USER.hashed_password, 'TEXT');
+    signature.update(USER.login);
+    if (data !== undefined) {
+        signedData.data = data;
+        signature.update(JSON.stringify(data, null, 4));
+    }
+    signedData.signature = signature.getHMAC('HEX');
+
+    let params = 'signed_data=' + JSON.stringify(signedData);
+    if (resource !== undefined) {
+        params += '&resource=' + resource;
+    }
+
+    updateLastActionTime();
+
+    return new Promise( (resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+            removePendingRequest(xhr);
+            resolve({
+                ok: (xhr.status == 200) ? true : false,
+                code: xhr.status,
+                data: xhr.response
+            });
+        };
+        xhr.onerror = () => {
+            abortAllRequests();
+            showError('A network error occured');
+        };
+        xhr.ontimeout = () => {
+            abortAllRequests();
+            showError('A network timeout occured. Please check your connection and try again');
+        }
+        xhr.open('POST', '/api/' + url, true);
+        xhr.responseType = 'json';
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+        xhr.send(params);
+        addPendingRequest(xhr);
+    });
+}
+
+
+/******************************************************************************
+ * ACL DOM functions
+ */
+
+/*
+ * Login of the form firstname.lastname@epitech.eu or lastn_f
+ * rights of the form "r" or "rwa"
+ * returns a DocumentFragment
+ */
+function generateACLDOM(acl)
+{
+    let li = c('li');
+    let input = c('input');
+    input.className = 'acl-user-input';
+    input.value = getShortLogin(acl.user);
+    input.placeholder = (getShortLogin(acl.user)) ? getShortLogin(acl.user) : 'User';
+    let actionsContainer = c('span');
+    let aclPermsContainer = c('span');
+    aclPermsContainer.className = 'acl-perms';
+
+    let label1 = c('label');
+    let cb1 = c('input');
+    let span1 = c('span');
+    cb1.type = 'checkbox';
+    cb1.value = 'r';
+    span1.appendChild(document.createTextNode('r'));
+    label1.appendChild(cb1);
+    label1.appendChild(span1);
+
+    let label2 = c('label');
+    let cb2 = c('input');
+    let span2 = c('span');
+    cb2.type = 'checkbox';
+    cb2.value = 'w';
+    span2.appendChild(document.createTextNode('w'));
+    label2.appendChild(cb2);
+    label2.appendChild(span2);
+
+    let label3 = c('label');
+    let cb3 = c('input');
+    let span3 = c('span');
+    cb3.type = 'checkbox';
+    cb3.value = 'a';
+    span3.appendChild(document.createTextNode('a'));
+    label3.appendChild(cb3);
+    label3.appendChild(span3);
+
+    if (acl.r)
+        cb1.checked = true;
+    if (acl.w)
+        cb2.checked = true;
+    if (acl.a)
+        cb3.checked = true;
+
+    aclPermsContainer.appendChild(label1);
+    aclPermsContainer.appendChild(label2);
+    aclPermsContainer.appendChild(label3);
+    let button = c('button');
+    button.className = 'btn acl-rem bg-red';
+    button.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        let li = evt.target.parentElement.parentElement;
+        let ul = li.parentElement;
+        ul.removeChild(li);
+        if (ul.childNodes.length == 0)
+            ul.classList.add('empty');
+        checkRepoACLDraft();
+    });
+    button.appendChild(document.createTextNode('-'));
+    li.appendChild(input);
+    actionsContainer.appendChild(aclPermsContainer);
+    actionsContainer.appendChild(button);
+    li.appendChild(actionsContainer);
+    return (li);
+}
+
+function generateACLListDOM()
+{
+    let fragment = document.createDocumentFragment();
+    let ul = c('ul');
+    ul.className = 'acl-list';
+    let p = c('p');
+    let icon = c('i');
+    icon.className = 'i-users';
+    p.appendChild(icon);
+    let span = c('span');
+    span.appendChild(document.createTextNode('ACL'));
+    p.appendChild(span);
+    fragment.appendChild(p);
+    let addBtn = c('button');
+    addBtn.className = 'btn acl-add bg-green';
+    addBtn.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        let ul = evt.target.parentElement.parentElement.childNodes[1];
+        let elm = generateACLDOM({user: '', r: true, w: false, a: false});
+        ul.appendChild(elm);
+        ul.classList.remove('empty');
+        elm.childNodes[0].focus();
+        checkRepoACLDraft();
+    });
+    addBtn.title = 'Add an ACL';
+    addBtn.appendChild(document.createTextNode('+'));
+    p.appendChild(addBtn);
+
+    const aclLength = ACL.length;
+    for (let i = 0; i < aclLength; i++) {
+        if (ACL[i].r || !ACL[i].w || !ACL[i].a) {
+            let li = generateACLDOM(ACL[i]);
+            ul.appendChild(li);
+        }
+    }
+    if (aclLength == 0) {
+        ul.classList.add('empty');
+    }
+    else {
+        ul.classList.remove('empty');
+    }
+    fragment.appendChild(ul);
+    return (fragment);
+}
+
+function generateACLList(aclListObject)
+{
+    ACL = [];
+    for (let acl in aclListObject) {
+        ACL.push({
+            user: getShortLogin(acl),
+            r: (aclListObject[acl].indexOf('r') > -1),
+            w: (aclListObject[acl].indexOf('w') > -1),
+            a: (aclListObject[acl].indexOf('a') > -1)
+        });
+    }
+}
+
+function checkRepoACLDraft()
+{
+    if (modal.current.id == 'modal-repo-create')
+        return;
+    let container = e('repo-view-acl-container');
+    let saveAclButton = e('act-repo-saveacl');
+    let lis = container.getElementsByTagName('li');
+    if (lis.length != ACL.length) {
+        container.dataset.draft = true;
+        saveAclButton.disabled = false;
         return;
     }
-    var pass = new jsSHA("SHA-512", "TEXT");
+    for (let i = 0; i < lis.length; i++) {
+        let aclPerms = lis[i].childNodes[1].childNodes[0];
+        if (getShortLogin(lis[i].childNodes[0].value) != ACL[i].user ||
+            aclPerms.childNodes[0].childNodes[0].checked != ACL[i].r ||
+            aclPerms.childNodes[1].childNodes[0].checked != ACL[i].w ||
+            aclPerms.childNodes[2].childNodes[0].checked != ACL[i].a) {
+            container.dataset.draft = true;
+            saveAclButton.disabled = false;
+            return;
+        }
+    }
+    container.dataset.draft = false;
+    saveAclButton.disabled = true;
+}
+
+
+
+/******************************************************************************
+ * Set a repository ACL
+ */
+
+function computeACLFromDOM(aclContainer)
+{
+    let ul = aclContainer.childNodes[1];
+    let lis = ul.getElementsByTagName('li');
+
+    let list = [];
+
+    for (let li of lis) {
+        let user = li.childNodes[0].value;
+        let aclPerms = li.childNodes[1].childNodes[0];
+        let r = aclPerms.childNodes[0].childNodes[0].checked;
+        let w = aclPerms.childNodes[1].childNodes[0].checked;
+        let a = aclPerms.childNodes[2].childNodes[0].checked;
+        if (getShortLogin(user).length > 0 && (r || w || a)) {
+            list.push({
+                user: getShortLogin(user),
+                r: r,
+                w: w,
+                a: a
+            });
+        }
+    }
+    return (list);
+}
+
+function computeACLToSet(aclContainer)
+{
+    let ul = aclContainer.childNodes[1];
+    let lis = ul.getElementsByTagName('li');
+
+    let toApply = [];
+
+    for (let li of lis) {
+        let user = li.childNodes[0].value;
+        let aclPerms = li.childNodes[1].childNodes[0];
+        let r = aclPerms.childNodes[0].childNodes[0].checked;
+        let w = aclPerms.childNodes[1].childNodes[0].checked;
+        let a = aclPerms.childNodes[2].childNodes[0].checked;
+        if (getShortLogin(user).length > 0 && (r || w || a)) {
+            toApply.push({
+                user: getShortLogin(user),
+                r: r,
+                w: w,
+                a: a
+            });
+        }
+    }
+    for (let a of ACL) {
+        if (toApply.filter( (e) => {
+            return (getShortLogin(e.user) == getShortLogin(a.user));
+        }).length == 0) {
+            toApply.push({user: getShortLogin(a.user), r: false, w: false, a: false});
+        }
+    }
+    for (let i = 0; i < toApply.length; i++) {
+        let e = toApply[i];
+        if (ACL.filter( (a) => {
+            return (getShortLogin(a.user) == getShortLogin(e.user) && a.r == e.r && a.w == e.w && a.a == e.a);
+        }).length > 0) {
+            toApply.splice(i, 1);
+        }
+    }
+    return (toApply);
+}
+
+function cleanEmptyACL(list)
+{
+    let final = [];
+    for (let a of list) {
+        if (a.user.length > 0 && (a.r || a.w || a.a)) {
+            final.push({
+                user: getShortLogin(a.user),
+                r: a.r,
+                w: a.w,
+                a: a.a
+            });
+        }
+    }
+    return (final);
+}
+
+function repoSetACL(repoName, toApply)
+{
+    loader(true);
+    let promises = [];
+    for (let acl of toApply) {
+        let rights = [];
+        if (acl.r)
+            rights.push('r');
+        if (acl.w)
+            rights.push('w');
+        if (acl.a)
+            rights.push('a');
+        let aclObj = {
+            acl: rights.join(''),
+            user: getRealLogin(acl.user)
+        };
+        promises.push(
+            retrieve('repo/setacl', repoName, aclObj)
+            .then( (response) => {
+                if (!response.ok) {
+                    throw response.data;
+                }
+            })
+            .catch( (error) => {
+                throw error;
+            })
+        );
+    }
+    return (Promise.all(promises)
+        .then( values => {
+            loader(false);
+        })
+        .catch( error => {
+            loader(false);
+            throw error;
+        })
+    );
+}
+
+
+
+/******************************************************************************
+ * View a repository's infos
+ */
+
+function generateACLLoadingDOM()
+{
+    let fragment = document.createDocumentFragment();
+    let p = c('p');
+    let i = c('i');
+    let span = c('span');
+    let text = document.createTextNode('ACL')
+    let loadingText = document.createTextNode('Loading ACL...');
+    i.className = 'i-users';
+    p.appendChild(i);
+    span.appendChild(text);
+    p.appendChild(span);
+    fragment.appendChild(p);
+    fragment.appendChild(loadingText);
+    return (fragment);
+}
+
+function showRepoViewModal(repoId)
+{
+    let elm = e('modal-repo-view');
+    replaceElmWithText(e('repo-view-creation_date'), 'Loading...');
+    let ACLLoadingDOM = generateACLLoadingDOM();
+    let repoViewACLContainer = e('repo-view-acl-container')
+    repoViewACLContainer.classList.add('acl-loading');
+    replaceElmWithDOM(repoViewACLContainer, ACLLoadingDOM);
+    elm.dataset.repoId = repoId;
+    showModal('repo-view', REPOSITORIES[repoId].name);
+    replaceElmWithText(e('repo-view-uuid'), REPOSITORIES[repoId].uuid);
+}
+
+function showEmptyRepoViewModal(repoId)
+{
+    let elm = e('modal-empty-repo-view');
+    elm.dataset.repoId = repoId;
+    showModal('empty-repo-view', '(no name)');
+    replaceElmWithText(e('empty-repo-view-uuid'), REPOSITORIES[repoId].uuid);
+}
+
+function getFormattedDate(timestamp)
+{
+    let fragment = document.createDocumentFragment();
+    let date = moment.unix(timestamp);
+    let dateString = date.format("MMMM D YYYY HH:mm") + ' ';
+    let fromNow = date.fromNow();
+    if (fromNow == 'in a few seconds') // idk wtf??
+        fromNow = 'a few seconds ago';
+    fragment.appendChild(document.createTextNode(dateString));
+    let span = c('span');
+    span.appendChild(document.createTextNode(fromNow));
+    fragment.appendChild(span);
+    return (fragment);
+}
+
+function openRepo(id)
+{
+    let repo = REPOSITORIES[id];
+    if (!repo.name) {
+        showEmptyRepoViewModal(id);
+        historyPush('(no name)', '/repositories/_');
+        return;
+    }
+    showRepoViewModal(id);
+    historyPush(repo.name, '/repositories/' + encodeURIComponent(repo.name));
+    removeFromArray(LASTREPOSCREATED, repo.name);
+    let aclContainer = e('repo-view-acl-container');
+    aclContainer.dataset.draft = false;
+    if (repo.creation_time) {
+        replaceElmWithDOM(e('repo-view-creation_date'), getFormattedDate(repo.creation_time));
+    }
+    else {
+        loader(true);
+        retrieve('repo/getinfo', repo.name)
+        .then( (response) => {
+            if (!response.ok) {
+                if (response.code == 404) {
+                    abortAllRequests();
+                    showModal('repo-deleted', repo.name);
+                    refreshRepoList();
+                }
+                else {
+                    showBlihError(response.data);
+                }
+                loader(false);
+                return;
+            }
+            if (response.data.uuid != REPOSITORIES[id].uuid) {
+                REPOSITORIES[i].uuid = response.data.uuid;
+            }
+            REPOSITORIES[id].creation_time = response.data.creation_time;
+            replaceElmWithDOM(e('repo-view-creation_date'), getFormattedDate(response.data.creation_time));
+            loader(false);
+        });
+    }
+    loader(true);
+    retrieve('repo/getacl', repo.name)
+    .then( (response) => {
+        if (!response.ok && response.data.error != "No ACLs") {
+            if (response.code == 404) {
+                abortAllRequests();
+                showModal('repo-deleted', repo.name);
+                refreshRepoList();
+            }
+            else {
+                showBlihError(response.data);
+            }
+            loader(false);
+            return;
+        }
+        if (response.code == 404)
+            generateACLList(null);
+        else
+            generateACLList(response.data);
+        aclContainer.classList.remove('acl-loading');
+        replaceElmWithDOM(aclContainer, generateACLListDOM());
+        checkRepoACLDraft();
+        loader(false);
+        let repoCloseButton = e('modal-close');
+        repoCloseButton.focus();
+        repoCloseButton.blur();
+    });
+}
+
+
+/******************************************************************************
+ * Create a repository
+ */
+
+function createRepo()
+{
+    let name = e('repo-create-name').value;
+    let aclList = e('repo-view-acl-container').childNodes[1];
+    e('act-repo-create').blur();
+
+    showError(false);
+    if (!name) {
+        showError('The name cannot be empty.');
+        return;
+    }
+    if (name.length > 84) {
+        showError('The name cannot exceed 84 characters.');
+        return;
+    }
+    loader(true);
+    retrieve('repo/create', null, {name: name, type: 'git'})
+    .then( (response) => {
+        if (!response.ok) {
+            showBlihError(response.data);
+            loader(false);
+            return;
+        }
+        LASTREPOSCREATED.push(name);
+        ACL.length = 0;
+        loader(false);
+        let ACLToSet = computeACLToSet(e('repo-create-acl-container'));
+        repoSetACL(name, ACLToSet)
+        .then( (values) => {
+            if (ACLToSet.length > 0)
+                showSuccess('The repository <b>' + htmlEntities(name) + '</b> has been created with the specified ACL.');
+            else
+                showSuccess('The repository <b>' + htmlEntities(name) + '</b> has been created without ACL.');
+            hideModal('repo-create');
+            refreshRepoList();
+        })
+        .catch( (error) => {
+            showBlihError(error);
+            hideModal('repo-create');
+            // TODO: open repo?
+            refreshRepoList();
+        });
+    });
+}
+
+
+
+/******************************************************************************
+ * Delete a repository
+ */
+
+function deleteRepo()
+{
+    loader(true);
+    let repoId = modal.current.dataset.repoId;
+    let repo = REPOSITORIES[repoId];
+    retrieve('repo/delete', (repo.name) ? repo.name : repo.uuid)
+    .then( (response) => {
+        if (!response.ok) {
+            showBlihError(response.data);
+            loader(false);
+            return;
+        }
+        REPOSITORIES.splice(repoId, 1);
+        showSuccess('The repository <b>' + htmlEntities(repo.name) + '</b> has been deleted.');
+        hideModal('repo-delete');
+        printRepoListDOM();
+        loader(false);
+    });
+}
+
+function showRepoDeleteModal(repoId)
+{
+    let elm = e('modal-repo-delete');
+    elm.dataset.repoId = repoId;
+    let repo = REPOSITORIES[repoId];
+    showModal('repo-delete', repo.name);
+    historyPush('Delete ' + repo.name, '/repositories/' + encodeURIComponent(repo.name) + '/delete');
+    replaceElmWithText(e('repo-delete-name'), repo.name);
+    let confirmName = e('repo-delete-confirmname');
+    confirmName.value = '';
+    confirmName.focus();
+    e('act-repo-confirmdelete').disabled = true;
+}
+function showEmptyRepoDeleteModal(repoId)
+{
+    let elm = e('modal-empty-repo-delete');
+    elm.dataset.repoId = repoId;
+    let repo = REPOSITORIES[repoId];
+    showModal('empty-repo-delete', '(no name)');
+    historyPush('Delete empty repository', '/repositories/_/delete');
+    replaceElmWithText(e('empty-repo-delete-uuid'), REPOSITORIES[repoId].uuid);
+}
+
+/******************************************************************************
+ * Remove an SSH key
+ */
+
+
+function deleteSSH()
+{
+    loader(true);
+    let sshId = modal.current.dataset.sshId;
+    let key = SSHKEYS[sshId];
+    let keyName = key.name;
+    retrieve('ssh/delete', keyName)
+    .then( (response) => {
+        if (!response.ok) {
+            showBlihError(response.data);
+            loader(false);
+            return;
+        }
+        SSHKEYS.splice(sshId, 1);
+        showSuccess('The SSH key <b>' + htmlEntities(key.name) + '</b> has been deleted.');
+        hideModal('ssh-delete');
+        printSSHListDOM();
+        loader(false);
+    });
+}
+
+function showSSHDeleteModal(sshId)
+{
+    let elm = e('modal-ssh-delete');
+    elm.dataset.sshId = sshId;
+    let key = SSHKEYS[sshId];
+    showModal('ssh-delete', key.name);
+    historyPush('Delete ' + key.name, '/sshkeys/' + encodeURIComponent(key.name) + '/delete');
+    replaceElmWithText(e('ssh-delete-name'), key.name);
+}
+
+
+
+/******************************************************************************
+ * Upload an SSH key
+ */
+
+function showSSHUploadModal(sshId)
+{
+    let sshUploadInput = e('ssh-upload-input');
+    sshUploadInput.value = '';
+    showModal('ssh-upload', 'Upload an SSH key');
+    sshUploadInput.focus();
+    historyPush('Upload an SSH key', '/sshkey-upload');
+}
+
+function uploadSSH()
+{
+    e('act-ssh-upload').blur();
+    let key = e('ssh-upload-input').value;
+    if (key.length < 50) {
+        console.log('TOO SHORT KEY! probably not a key');
+    }
+    loader(true);
+    retrieve('ssh/upload', false, {sshkey: encodeURIComponent(key).replace(/\%2F/g, '/')})
+    .then( (response) => {
+        if (!response.ok) {
+            showBlihError(response.data);
+            loader(false);
+            return;
+        }
+        loader(false);
+        let nameArray = key.split(' ');
+        let name = nameArray[nameArray.length - 1];
+        LASTSSHUPLOADED.push(name);
+        showSuccess('The SSH key was successfully uploaded.');
+        hideModal('ssh-upload');
+        refreshSSHList();
+    });
+}
+
+/******************************************************************************
+ * Create a repository
+ */
+
+function showRepoCreateModal()
+{
+    showModal('repo-create', 'Create a repository');
+    e('repo-create-name').value = '';
+    e('repo-create-name').focus();
+    generateACLList({'ramassage-tek': 'r'});
+    replaceElmWithDOM(e('repo-create-acl-container'), generateACLListDOM());
+    historyPush('Create a repository', '/repository-create');
+}
+
+
+function showSSHViewModal(sshId)
+{
+    clearElm(e('ssh-view-content'));
+    let elm = e('modal-ssh-view');
+    elm.dataset.sshId = sshId;
+    let key = SSHKEYS[sshId];
+    showModal('ssh-view', key.name);
+    historyPush(key.name, '/sshkeys/' + encodeURIComponent(key.name));
+    replaceElmWithText(e('ssh-view-content'), key.content);
+}
+
+
+/******************************************************************************
+ * Login / logout
+ */
+
+function getDOM()
+{
+    return new Promise( (resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+            resolve({
+                ok: (xhr.status == 200) ? true : false,
+                code: xhr.status,
+                data: xhr.responseText
+            });
+        };
+        xhr.onerror = () => {
+            abortAllRequests();
+            reject({
+                code: 0,
+                data: xhr.responseText
+            });
+        };
+        // Send the request
+        xhr.open('GET', '/dom.html', true);
+        xhr.send();
+    });
+}
+
+function loadLoggedInScripts()
+{
+    loader(true);
+    let modalScript = c('script');
+    modalScript.onload = () => {
+        modal = new VanillaModal.default({
+            loadClass: 'modal-ok',
+            onBeforeOpen: () => {
+                updateLastActionTime();
+                document.activeElement.blur();
+                showError(false);
+            },
+            onBeforeClose: () => {
+                if (!noURLChange) {
+                    updateLastActionTime();
+                    if (modal.current.id == 'modal-repo-view' || modal.current.id == 'modal-empty-repo-view' || modal.current.id == 'modal-repo-delete' || modal.current.id == 'modal-repo-deleted' || modal.current.id == 'modal-empty-repo-delete' || modal.current.id == 'modal-repo-create') {
+                        abortAllRequests();
+                        historyPush('Repositories', '/repositories');
+                    }
+                    if (modal.current.id == 'modal-ssh-view' || modal.current.id == 'modal-ssh-delete' || modal.current.id == 'modal-ssh-upload')
+                        historyPush('SSH keys', '/sshkeys');
+                }
+            }
+        });
+        loader(false);
+    };
+    modalScript.async = true;
+    modalScript.src = SCRIPT_MODAL_PATH;
+    document.head.appendChild(modalScript);
+
+    loader(true);
+    let momentScript = c('script');
+    momentScript.onerror = () => {
+        showError('An error ocurred. Please reload the page.');
+    }
+    momentScript.onload = () => {
+        loader(false);
+    };
+    momentScript.async = true;
+    momentScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js';
+    document.head.appendChild(momentScript);
+}
+
+function handleSSHClick(evt)
+{
+    if (evt.target.tagName.toLowerCase() == 'span') {
+        let li = evt.target.parentElement.parentElement;
+        li.classList.remove('recent');
+        showSSHViewModal(li.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'a') {
+        let li = evt.target.parentElement;
+        li.classList.remove('recent');
+        showSSHViewModal(li.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'button') {
+        let li = evt.target.parentElement;
+        showSSHDeleteModal(li.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'i') {
+        let li = evt.target.parentElement.parentElement;
+        showSSHDeleteModal(li.dataset.id);
+    }
+}
+
+function handleRepoClick(evt)
+{
+    if (evt.target.tagName.toLowerCase() == 'span') {
+        let repoItem = evt.target.parentElement.parentElement;
+        repoItem.classList.remove('recent');
+        openRepo(repoItem.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'a') {
+        let repoItem = evt.target.parentElement;
+        repoItem.classList.remove('recent');
+        openRepo(repoItem.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'button') {
+        let repoItem = evt.target.parentElement;
+        if (REPOSITORIES[repoItem.dataset.id].name == '')
+            showEmptyRepoDeleteModal(repoItem.dataset.id);
+        else
+            showRepoDeleteModal(repoItem.dataset.id);
+    }
+    else if (evt.target.tagName.toLowerCase() == 'i') {
+        let repoItem = evt.target.parentElement.parentElement;
+        if (REPOSITORIES[repoItem.dataset.id].name == '')
+            showEmptyRepoDeleteModal(repoItem.dataset.id);
+        else
+            showRepoDeleteModal(repoItem.dataset.id);
+    }
+}
+
+function isOutdated(timestamp, minutes)
+{
+    let now = Math.floor(Date.now() / 1000);
+    if (timestamp < (now - 60 * minutes)) {
+        return (true);
+    }
+    else {
+        return (false);
+    }
+}
+
+function handleNavChange(evt)
+{
+    evt.target.blur();
+    showError(false);
+    let main = e('main');
+    if (evt.target.dataset.nav == 'repositories') {
+        if (main.classList.contains('repositories')) {
+            refreshRepoList();
+            return;
+        }
+        main.classList.remove('sshkeys');
+        main.classList.add('repositories');
+        historyPush('Repositories', '/repositories');
+        if (REPOSITORIES.length == 0 || isOutdated(LASTREPOUPDATE, 10))
+            refreshRepoList();
+    }
+    else {
+        if (main.classList.contains('sshkeys')) {
+            refreshSSHList();
+            return;
+        }
+        main.classList.remove('repositories');
+        main.classList.add('sshkeys');
+        historyPush('SSH keys', '/sshkeys');
+        if (SSHKEYS.length == 0 || isOutdated(LASTSSHUPDATE, 10))
+            refreshSSHList();
+    }
+}
+
+function handleRepoDeleteButton(evt)
+{
+    noURLChange = true;
+    const repoId = modal.current.dataset.repoId;
+    hideModal('repo-view');
+    noURLChange = false;
+    setTimeout( () => {
+        showRepoDeleteModal(repoId);
+    }, 220);
+}
+function handleEmptyRepoDeleteButton(evt)
+{
+    noURLChange = true;
+    const repoId = modal.current.dataset.repoId;
+    hideModal('empty-repo-view');
+    noURLChange = false;
+    setTimeout( () => {
+        showEmptyRepoDeleteModal(repoId);
+    }, 200);
+}
+function handleSSHDeleteButton(evt)
+{
+    noURLChange = true;
+    const sshId = modal.current.dataset.sshId;
+    hideModal('ssh-view');
+    noURLChange = false;
+    setTimeout( () => {
+        showSSHDeleteModal(sshId);
+    }, 220);
+}
+
+function checkSSHUploadButton()
+{
+    let submit = e('act-ssh-upload');
+    if (e('ssh-upload-input').value.length < 50)
+        submit.disabled = true;
+    else
+        submit.disabled = false;
+}
+
+function updateLoggedInDOM()
+{
+    document.body.classList.add('logged-in');
+
+    // Add header logged-in elements
+    let headerElm = e('header');
+
+    let logoutButton = c('button');
+    logoutButton.title = 'Logout';
+    logoutButton.innerHTML = '<i class="i-logout"></i>';
+    logoutButton.addEventListener('click', (evt) => {
+        abortAllRequests();
+        showError(false);
+        loader(true);
+        window.location.href = '/';
+    });
+
+    let loggedInUser = c('span');
+    loggedInUser.id = "logged-in-user";
+    replaceElmWithText(loggedInUser, USER.short_login);
+
+    headerElm.appendChild(logoutButton);
+    headerElm.appendChild(loggedInUser);
+
+    // Set header event listeners
+    e('brand').addEventListener('click', (evt) => {
+        evt.preventDefault();
+        evt.currentTarget.blur();
+    });
+
+    e('refresh-repolist').addEventListener('click', (evt) => {
+        document.activeElement.blur();
+        refreshRepoList();
+    });
+    e('refresh-sshlist').addEventListener('click', (evt) => {
+        document.activeElement.blur();
+        refreshSSHList();
+    });
+
+    // Set modal actions event listeners
+    e('act-repo-saveacl').addEventListener('click', (evt) => {
+        e('act-repo-saveacl').blur();
+        let repoViewACLContainer = e('repo-view-acl-container');
+        if (repoViewACLContainer.dataset.draft == 'true')
+            repoSetACL(REPOSITORIES[modal.current.dataset.repoId].name, computeACLToSet(repoViewACLContainer))
+            .then( (values) => {
+                ACL = computeACLFromDOM(repoViewACLContainer);
+                replaceElmWithDOM(repoViewACLContainer, generateACLListDOM());
+                showSuccess('The specified ACL have been applied.');
+                repoViewACLContainer.dataset.draft = false;
+                e('act-repo-saveacl').disabled = true;
+            })
+            .catch( (error) => {
+                showBlihError(error);
+            });
+    });
+    e('act-repo-cancelediting').addEventListener('click', (evt) => {
+        replaceElmWithDOM(e('repo-view-acl-container'), generateACLListDOM());
+        checkRepoACLDraft();
+    });
+    e('act-repo-delete').addEventListener('click', handleRepoDeleteButton);
+    e('act-empty-repo-delete').addEventListener('click', handleEmptyRepoDeleteButton);
+    e('act-repo-confirmdelete').addEventListener('click', deleteRepo);
+    e('act-empty-repo-confirmdelete').addEventListener('click', deleteRepo);
+    e('act-repo-create').addEventListener('click', createRepo);
+    e('act-ssh-delete').addEventListener('click', handleSSHDeleteButton);
+    e('act-ssh-confirmdelete').addEventListener('click', deleteSSH);
+
+    e('repo-delete-confirmname').addEventListener('input', checkRepoConfirm);
+
+    e('modal-close').addEventListener('keydown', (evt) => {
+        if (evt.keyCode == 13)
+            closeCurrentModal();
+    });
+    e('modal-close').addEventListener('click', (evt) => {
+        evt.target.blur();
+    })
+
+    // SSHkey upload event listeners
+    let sshUploadInput = e('ssh-upload-input');
+    sshUploadInput.addEventListener('input', checkSSHUploadButton);
+    ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        sshUploadInput.addEventListener(eventName, preventDefaults);
+    })
+
+    ;['dragenter', 'dragover'].forEach(eventName => {
+        sshUploadInput.addEventListener(eventName, (e) => {
+            sshUploadInput.classList.add('dropping');
+        });
+    })
+
+    ;['dragleave', 'drop'].forEach(eventName => {
+        sshUploadInput.addEventListener(eventName, (e) => {
+            sshUploadInput.classList.remove('dropping');
+        });
+    });
+    sshUploadInput.addEventListener('drop', (evt) => {
+        let file = evt.dataTransfer.files[0];
+        if (!file) {
+            console.log('NO FILE DETECTED');
+            return;
+        }
+        loader(true);
+        let reader = new FileReader();
+        reader.onload = ( (f) => {
+            return (e) => {
+                sshUploadInput.value = e.target.result.trim();
+                checkSSHUploadButton();
+                loader(false);
+            };
+        })(file);
+        reader.readAsText(file);
+    });
+
+    e('act-ssh-upload').addEventListener('click', uploadSSH);
+
+    // ACL event listeners
+    e('repo-view-acl-container').addEventListener('input', checkRepoACLDraft);
+
+    // Set other event listeners
+
+    let repoCreateButtons = document.getElementsByClassName('btn repo-create');
+    for (let btn of repoCreateButtons) {
+        btn.addEventListener('click', (evt) => {
+            showRepoCreateModal();
+        })
+    }
+    let sshUploadButtons = document.getElementsByClassName('btn ssh-upload');
+    for (let btn of sshUploadButtons) {
+        btn.addEventListener('click', (evt) => {
+            showSSHUploadModal();
+        })
+    }
+    let navContainer = document.getElementsByTagName('nav')[0];
+    for (let child of navContainer.childNodes) {
+        child.addEventListener('click', (evt) => {
+            evt.preventDefault();
+            handleNavChange(evt);
+        })
+    }
+
+    // Replace login section with new DOM
+    let main = e('main');
+    let newMain = e('new-main');
+    replaceChildren(main, newMain);
+    document.body.removeChild(newMain);
+    main.classList.add('repositories');
+    e('repolist').addEventListener('click', handleRepoClick);
+    e('repolist').addEventListener('keydown', (evt) => {
+        if (evt.keyCode == 13)
+            handleRepoClick(evt);
+    });
+    e('sshlist').addEventListener('click', handleSSHClick);
+    e('sshlist').addEventListener('keydown', (evt) => {
+        if (evt.keyCode == 13)
+            handleSSHClick(evt);
+    });
+
+    window.addEventListener('popstate', closeCurrentModal);
+    window.addEventListener('popstate', (evt) => {
+        let main = e('main');
+        if (window.location.pathname == '/repositories' && main.classList.contains('sshkeys')) {
+            main.classList.remove('sshkeys');
+            main.classList.add('repositories');
+            historyPush('Repositories', '/repositories');
+            evt.stopPropagation();
+        } else if (window.location.pathname == '/sshkeys' && main.classList.contains('repositories')) {
+            main.classList.remove('repositories');
+            main.classList.add('sshkeys');
+            historyPush('SSH keys', '/sshkeys');
+            evt.stopPropagation();
+        }
+    });
+}
+
+function login()
+{
+    loader(true);
+    showError(false);
+    e('login-submit').blur();
+    let username = e('login-user').value;
+    let password = e('login-pass').value;
+    if (username.length < 5 || password.length < 3) {
+        setTimeout(() => {
+            showError('Invalid username/password');
+            loader(false);
+        }, 500);
+        return;
+    }
+    let pass = new jsSHA("SHA-512", "TEXT");
     pass.update(password);
-    Guser = getRealUser(username);
-    Ghashedp = pass.getHash("HEX");
-    repoList(function (success, status, response) {
-    if (success && !response.hasOwnProperty('error') && !response.hasOwnProperty('ERROR'))
-    {
-        loader(true);
+    password = null;
+    USER.login = getRealLogin(username);
+    USER.hashed_password = pass.getHash("HEX");
+
+    retrieve('repo/list')
+    .then( (listResponse) => {
+        if (!listResponse.ok) {
+            if (listResponse.code == 401) {
+                showError('Invalid username/password');
+            }
+            else {
+                showBlihError(listResponse.data);
+            }
+            USER.login = false;
+            USER.hashed_password = false;
+            loader(false);
+            return;
+        }
+        USER.short_login = getShortLogin(username);
         rememberMe(username);
-        loader(true);
 
-        getDOM(function(){
-
-            loader(true);
-            document.getElementById('logged-in-user').innerHTML = htmlEntities(Guser);
-            document.body.classList.add('logged-in');
-            var repoList = computeRepoList(response);
-            document.getElementById('repolist').innerHTML = repoList;
-
+        getDOM()
+        .then( (DOMResponse) => {
+            if (!DOMResponse.ok) {
+                showError('An error occured.');
+                loader(false);
+                return;
+            }
+            document.getElementsByTagName('footer')[0].insertAdjacentHTML('beforebegin', DOMResponse.data);
+            loadLoggedInScripts();
+            updateLoggedInDOM();
+            historyPush('Repositories', '/repositories');
             document.body.scrollTop = 0;
             document.documentElement.scrollTop = 0;
+            generateAndShowRepoList(listResponse.data);
+            setInterval(checkAutologout, 60000);
             loader(false);
-
         });
-    }
-    else
-    {
-        Guser = false;
-        Ghashedp = false;
-        loader(false);
-        try {
-            var parsed = JSON.parse(response);
-            if (parsed.hasOwnProperty('ERROR'))
-                handleError(true, parsed["ERROR"]);
-            else if (parsed.hasOwnProperty('error'))
-            {
-              if (parsed['error'] == 'Bad token')
-                handleError(true, 'Invalid username/password.');
-              else
-                handleError(true, parsed['error']);
-            }
-        } catch (e) {
-            handleError(true, 'An unknown error has occured.');
-        }
-    }
     });
 }
 
-function resetSaveAcl() {
-    var saveAcl = document.getElementById('save-acl');
-    if (saveAcl)
-        saveAcl.disabled = false;
-    handleError(false, false);
+function logout()
+{
+    abortAllRequests();
+    loader(true);
+    showError(false);
+    window.location.href = '/';
 }
 
 
-function aclAdd(aclRootElmId, user, rights, intended) {
-    var aclRootElm = document.getElementById(aclRootElmId);
-    if (parseInt(aclRootElm.dataset.aclnb) + 1 > 7)
-        return ;
-    if (parseInt(aclRootElm.dataset.aclnb) == 0)
-        aclRootElm.innerHTML = '';
-    var li = document.createElement('li');
-    if (intended)
-        li.classList.add('draft'); // draft status while not saved
-    var name = document.createElement('input');
-    name.type = "text";
-    if (!intended)
-        name.disabled = true;
-    else if (aclRootElmId != 'repo-create-acl')
-        document.getElementById("save-acl").disabled = false;
-    if (user)
-    {
-        name.placeholder = user;
-        name.value = user;
+
+/******************************************************************************
+ * Initialization
+ */
+
+function init()
+{
+    loader.count = 0;
+    e('login-form').addEventListener('submit', (evt) => {
+        evt.preventDefault();
+        if (!LOADING)
+            login();
+    });
+    window.addEventListener('keydown', (evt) => {
+        if (evt.keyCode != 13)
+            return;
+        if (evt.target.id == 'repo-delete-confirmname')
+            e('act-repo-confirmdelete').click();
+        else if (evt.target.id == 'repo-create-name')
+            e('act-repo-create').click();
+        else if (evt.target.className == 'acl-user-input' && modal.current.id == 'modal-repo-create')
+            e('act-repo-create').click();
+        else if (evt.target.className == 'acl-user-input' && modal.current.id == 'modal-repo-view')
+            e('act-repo-saveacl').click();
+    });
+    window.addEventListener('online',  () => {
+        let header = document.getElementsByTagName('HEADER')[0];
+        header.classList.add('online');
+        header.classList.remove('offline');
+        document.documentElement.classList.remove('act-disabled');
+    });
+    window.addEventListener('offline', () => {
+        let header = document.getElementsByTagName('HEADER')[0];
+        header.classList.add('offline');
+        header.classList.remove('online');
+        document.documentElement.classList.add('act-disabled');
+    });
+    if (!navigator.onLine) {
+        let header = document.getElementsByTagName('HEADER')[0];
+        header.classList.add('offline');
+        header.classList.remove('online');
+        document.documentElement.classList.add('act-disabled');
     }
-    else
-    {
-        name.placeholder = "User";
+    e('user-info').addEventListener('click', (evt) => {
+        userInfo('hidden', false);
+        evt.target.blur();
+    });
+    if (localStorage.getItem('autologout')) {
+        showError('You have been automatically logged out.');
+        localStorage.removeItem('autologout');
     }
-    name.maxlength = 84;
-    var span = document.createElement('span');
-    span.className = 'acl-rights';
-    var label1 = document.createElement('label');
-    var label2 = document.createElement('label');
-    var label3 = document.createElement('label');
-    label1.onselectstart = function(){return false};
-    label2.onselectstart = function(){return false};
-    label3.onselectstart = function(){return false};
-    var span1 = document.createElement('span');
-    var span2 = document.createElement('span');
-    var span3 = document.createElement('span');
-    var cb1 = document.createElement('input');
-    var cb2 = document.createElement('input');
-    var cb3 = document.createElement('input');
-    cb1.type = "checkbox";
-    cb2.type = "checkbox";
-    cb3.type = "checkbox";
-    cb1.value = "r";
-    cb2.value = "w";
-    cb3.value = "a";
-    cb1.onclick = checkboxToggleHandler;
-    cb2.onclick = checkboxToggleHandler;
-    cb3.onclick = checkboxToggleHandler;
-    if (aclRootElmId != 'repo-create-acl')
-    {
-        cb1.onchange = resetSaveAcl;
-        cb2.onchange = resetSaveAcl;
-        cb3.onchange = resetSaveAcl;
-    }
-    if (rights)
-    {
-        if (rights.indexOf('r') > -1)
-            cb1.checked = true;
-        if (rights.indexOf('w') > -1)
-            cb2.checked = true;
-        if (rights.indexOf('a') > -1)
-            cb3.checked = true;
-    }
-    else
-        cb1.checked = true;
-    var tn1 = document.createTextNode('r ');
-    var tn2 = document.createTextNode('w ');
-    var tn3 = document.createTextNode('a ');
-    label1.appendChild(cb1);
-    label2.appendChild(cb2);
-    label3.appendChild(cb3);
-    span1.appendChild(tn1);
-    span2.appendChild(tn2);
-    span3.appendChild(tn3);
-    label1.appendChild(span1);
-    label2.appendChild(span2);
-    label3.appendChild(span3);
-    span.appendChild(label1);
-    span.appendChild(label2);
-    span.appendChild(label3);
-    var button = document.createElement('button');
-    button.className = 'btn acl-rem bg-red';
-    button.onclick = function(e){e.stopPropagation(); aclRem(this.parentElement.parentElement, this.parentElement)};
-    var btntext = document.createTextNode(' - ');
-    button.appendChild(btntext);
-    li.appendChild(name);
-    li.appendChild(span);
-    li.appendChild(button);
-
-    aclRootElm.appendChild(li);
-    aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) + 1;
-    if (intended)
-        name.focus();
-}
-
-function aclRem(aclRootElm, elmToRem) {
-    if (parseInt(aclRootElm.dataset.aclnb) <= 0)
-        return;
-    aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
-    if (!elmToRem.classList.contains('draft'))
-    {
-        var acltorem = aclRootElm.dataset.acltorem.split(',');
-        if (acltorem == ',')
-            acltorem = '';
-        acltorem.push(elmToRem.children[0].value);
-        aclRootElm.dataset.acltorem = acltorem.toString();
-        resetSaveAcl();
-    }
-    aclRootElm.removeChild(elmToRem);
-    if (parseInt(aclRootElm.dataset.aclnb) == 0)
-        aclRootElm.innerHTML = '<span>(No ACLs)</span>';
-}
-
-function getAclPerms(aclSpanElm) {
-    var acls = '';
-    for (i = 0; i < 3; i++) {
-        if (aclSpanElm.children[i].children[0].checked == true)
-            acls += aclSpanElm.children[i].children[0].value;
-    }
-    return (acls);
-}
-
-
-function repoSetAllAcl(repo, aclRootElmId, callback) {
-
-    let rsacPromise = new Promise( (resolve, reject) => {
-
-        loader(true);
-        var aclRootElm = document.getElementById(aclRootElmId);
-        var aclnb = parseInt(aclRootElm.dataset.aclnb);
-        var acltorem = aclRootElm.dataset.acltorem.split(',');
-        var acltoremnb = acltorem.length - 1;
-
-        if (aclnb == 0 && acltoremnb == 0)
-            resolve(aclRootElmId);
-
-        // handle ACLs to update/set
-        for (iaclset = 0; iaclset < aclnb; iaclset++) {
-
-            var curindex = iaclset;
-            repoSetAcl(
-                repo,
-                aclRootElm.children[iaclset].children[0].value,
-                getAclPerms(aclRootElm.children[iaclset].children[1]),
-                function(success, status, response) {
-                    if (success)
-                    {
-                        if (aclRootElm.children[curindex].classList.contains('for-deletion')) {
-                            aclRootElm.dataset.aclnb = parseInt(aclRootElm.dataset.aclnb) - 1;
-
-                            aclRootElm.removeChild(aclRootElm.children[curindex]);
-                            if (parseInt(aclRootElm.dataset.aclnb) == 0)
-                                aclRootElm.innerHTML = '<span>(No ACLs)</span>';
-                        }
-                        else {
-                            aclRootElm.children[curindex].classList.remove('draft'); // reset 'draft' status
-                            aclRootElm.children[curindex].children[0].disabled = true;
-                        }
-                    }
-                    if (!success)
-                        reject([status, response, aclRootElmId]);
-                    else if (curindex == aclnb - 1 && acltoremnb == 0)
-                        resolve(aclRootElmId);
-                }
-            );
-        }
-
-
-        // handle ACLs to remove
-        for (iaclrem = 1; iaclrem <= acltoremnb; iaclrem++) {
-            var curindex = iaclrem;
-
-            repoSetAcl(
-                repo,
-                acltorem[iaclrem],
-                "",
-                function(success, status, response) {
-                    if (!success)
-                        reject([status, response, aclRootElmId]);
-                    else if (curindex == acltoremnb)
-                        resolve(aclRootElmId);
-                }
-            );
+    // Polyfill because Edge's HTMLCollections are not iterable
+    if (typeof HTMLCollection.prototype[Symbol.iterator] !== 'function') {
+        HTMLCollection.prototype[Symbol.iterator] = function () {
+            let i = 0;
+            return {
+                next: () => ({done: i >= this.length, value: this.item(i++)})
+            }
         };
-    });
-
-
-    rsacPromise.then(
-        (aclRootElmId) => {
-            if (aclRootElmId != 'repo-create-acl')
-                document.getElementById('save-acl').disabled = true;
-            loader(false);
-            callback(true);
-        })
-    .catch(
-        (reason) => {
-            loader(false);
-            if (Array.isArray(reason))
-            {
-                if (reason[2] != 'repo-create-acl')
-                    document.getElementById('save-acl').disabled = false;
-                else
-                {
-                    refreshRepolist();
-                    hideModal('repo-create');
-                    refreshRepolist();
-                }
-
-                if (reason[0] == 99)
-                    handleError(true, reason[1]);
-                else
-                    handleApiError(reason[0], reason[1]);
-            }
-            else
-                handleError(true, reason);
-            callback(false);
-        });
-
-}
-
-function repoSetAcl(repo, acluser, aclrights, callback) {
-    var status = true;
-
-    if (!acluser || acluser.length == 0)
-        callback(false, 99, "Invalid ACL user.");
-    else if (acluser == Guser)
-        callback(false, 99, "Can't change acl for owner");
-    else
-    {
-        var repoacl = { acl: aclrights, user: acluser };
-        retrieve('reposetacl', repo, repoacl, callback);
     }
 }
 
-function showRepoCreate() {
-    var aclelm = document.getElementById('repo-create-acl');
-    document.getElementById('repo-create-name').value = '';
-    aclelm.innerHTML = '<span>(No ACLs)</span>';
-    aclelm.dataset.aclnb = 0;
-    aclAdd('repo-create-acl', 'ramassage-tek', 'r', true);
-    showModal('repo-create', 'Create a repository', '<button class="btn bg-green" onclick="event.preventDefault(); repoCreate(document.getElementById(\'repo-create-name\').value, \'repo-create-acl\');" id="repo-create-confirmbutton">Create <i class="i i-plus"></i></button>');
-    document.getElementById('repo-create-name').focus();
+window.addEventListener('load', () => {
+    document.documentElement.classList.remove('first-loading');
+});
+
+if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+    init();
 }
-
-function checkboxToggleHandler() {
-    var acls = this.parentElement.parentElement.getElementsByTagName('input');
-    if (acls[0].checked === false && acls[1].checked === false && acls[2].checked === false) {
-        this.parentElement.parentElement.parentElement.classList.add('for-deletion');
-    } else {
-        this.parentElement.parentElement.parentElement.classList.remove('for-deletion');
-    }
-}
-
-function attachCheckboxHandlers(modalElm) {
-
-    var elms = modalElm.getElementsByTagName('input');
-
-    // assign function to onclick property of each checkbox
-    for (var i = 0, len = elms.length; i < len; i++) {
-        if (elms[i].type === 'checkbox') {
-            elms[i].onclick = checkboxToggleHandler;
-        }
-    }
+else {
+    document.addEventListener('DOMContentLoaded', init);
 }
