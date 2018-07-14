@@ -188,16 +188,6 @@ h1 a {
     height: 100%;
     color: rgba(255, 255, 255, .95)!important;
 }
-h1 a::after { /* BETA */
-    display: inline-block;
-    content: 'BETA';
-    font-size: .9rem;
-    background: red;
-    color: #fff;
-    padding: .2em;
-    line-height: .9rem;
-    margin-left: 1em;
-}
 h1 a:focus {
     color: rgba(255, 255, 255, .88)!important;
 }
