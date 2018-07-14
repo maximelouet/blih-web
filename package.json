@@ -1,21 +1,28 @@
 {
   "name": "blih-web",
-  "version": "1.8.3",
+  "version": "2.0.0",
   "description": "Web interface for Epitech BLIH",
   "main": "server.js",
   "dependencies": {
-    "body-parser": "^1.18.2",
-    "cookie-parser": "^1.4.3",
+    "body-parser": "^1.18.3",
     "ejs": "^2.6.1",
     "express": "^4.16.3",
-    "request": "^2.85.0",
+    "request": "^2.87.0",
     "staticify": "^2.0.0",
     "vanilla-modal": "^1.6.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "html-minifier-cli": "^0.1.0",
+    "uglify-es": "^3.3.9",
+    "uglifycss": "0.0.29"
+  },
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "min-css": "uglifycss public/blih-web.full.css > public/blih-web.css",
+    "min-js": "uglifyjs public/blih-web.full.js -c -m toplevel=true -o public/blih-web.js && echo '' >> public/blih-web.js",
+    "min-html": "htmlmin -o public/dom.html public/dom.full.html && echo '' >> public/dom.html",
+    "minify": "npm run min-js && npm run min-css && npm run min-html",
+    "prepare": "npm run minify"
   },
   "repository": {
     "type": "git",
