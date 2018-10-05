@@ -31,7 +31,7 @@ app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(staticify.middleware);
 
-const VERSION = '2.0.0'
+const VERSION = '2.1.0'
 const SERVER_PORT = 1337
 
 app.get('/', (req, res) => {

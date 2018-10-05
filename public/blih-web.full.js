@@ -337,15 +337,13 @@ function generateRepoList(response)
 {
     REPOSITORIES = [];
     for (let repo in response) {
-        if (response.hasOwnProperty(repo)) {
-            REPOSITORIES.push({
-                name: response[repo].name,
-                uuid: response[repo].uuid,
-                recent: (LASTREPOSCREATED.includes(response[repo].name))
-            });
-        }
-        else
-            throw new Error("DAFUQISDAT " + response[repo] + " (raw is " + repo + ')');
+        if (!response[repo].name && !response[repo].uuid)
+            continue;
+        REPOSITORIES.push({
+            name: response[repo].name,
+            uuid: response[repo].uuid,
+            recent: (LASTREPOSCREATED.includes(response[repo].name))
+        });
     }
 }
 
@@ -361,7 +359,7 @@ function createRepoListDOM()
         li.dataset.id = i;
         if (repo.name === '')
             li.classList.add('no-name');
-        if (repo.name.toUpperCase() == 'BITE')
+        else if (repo.name.toUpperCase() == 'BITE')
             li.classList.add('bite');
         if (repo.recent)
             li.classList.add('recent');
@@ -392,7 +390,9 @@ function printRepoListDOM()
     let repoListElm = e('repolist');
     clearElm(repoListElm);
     repoListElm.appendChild(repoList);
-    if (REPOSITORIES.length > 0)
+    if (REPOSITORIES.length == 0)
+        repoListElm.classList.add('empty');
+    else
         repoListElm.classList.remove('empty');
     LASTREPOUPDATE = Math.floor(Date.now() / 1000);
     replaceElmWithText(e('repo-total-count'), 'Total: ' + REPOSITORIES.length + ' repositor' + ((REPOSITORIES.length == 1) ? 'y' : 'ies'));
@@ -426,6 +426,8 @@ function generateSSHList(response)
 {
     SSHKEYS = [];
     for (let key in response) {
+        if (!response[key].name && !response[key].content)
+            continue;
         SSHKEYS.push({
             name: response[key].name,
             content: response[key].content,
@@ -478,7 +480,9 @@ function printSSHListDOM()
     let SSHListElm = e('sshlist');
     clearElm(SSHListElm);
     SSHListElm.appendChild(SSHList);
-    if (SSHKEYS.length > 0)
+    if (SSHKEYS.length == 0)
+        SSHListElm.classList.add('empty');
+    else
         SSHListElm.classList.remove('empty');
     LASTSSHUPDATE = Math.floor(Date.now() / 1000);
     replaceElmWithText(e('ssh-total-count'), 'Total: ' + SSHKEYS.length + ' SSH key' + ((SSHKEYS.length == 1) ? '' : 's'));
@@ -490,10 +494,6 @@ function refreshSSHList()
     replaceElmWithText(e('ssh-total-count'), 'Loading...');
     retrieve('ssh/list')
     .then( (response) => {
-        if (!response.ok) {
-            showBlihError(response);
-            loader(false);
-        }
         generateAndShowSSHList(response.data);
         loader(false);
     });
@@ -1628,7 +1628,7 @@ function login()
 
     retrieve('repo/list')
     .then( (listResponse) => {
-        if (!listResponse.ok) {
+        if (!listResponse.ok && listResponse.code != 404) {
             if (listResponse.code == 401) {
                 showError('Invalid username/password');
             }

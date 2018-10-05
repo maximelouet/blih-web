@@ -410,6 +410,10 @@ textarea {
 .listing.empty + .btn {
     display: none;
 }
+html:not(.loading) .listing.empty::after {
+    content: '(Nothing to show)';
+    font-style: italic;
+}
 .section-header::after {
     content: "";
     display: table;
