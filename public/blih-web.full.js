@@ -316,6 +316,7 @@ function showError(msg)
         userInfo('bg-red', msg);
     }
 }
+
 function showSuccess(msg)
 {
     if (msg === false) {
@@ -934,6 +935,7 @@ function showRepoViewModal(repoId)
     elm.dataset.repoId = repoId;
     showModal('repo-view', REPOSITORIES[repoId].name);
     replaceElmWithText(e('repo-view-uuid'), REPOSITORIES[repoId].uuid);
+    replaceElmWithText(e('repo-view-url'), "git@git.epitech.eu:/"+USER.login+"/"+REPOSITORIES[repoId].name);
 }
 
 function showEmptyRepoViewModal(repoId)
@@ -1391,6 +1393,38 @@ function handleNavChange(evt)
     }
 }
 
+function handleCopyGitUrl(evt)
+{
+    const target = evt.target;
+    var text = target.innerText;
+    if (window.clipboardData && window.clipboardData.setData) {
+        return clipboardData.setData("Text", text); 
+    } else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+        var textarea = document.createElement("textarea");
+        textarea.textContent = text;
+        textarea.style.position = "fixed";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand("copy");
+            showSuccess("Repository was copied successfully.");
+            setTimeout(() => {
+                showSuccess(false)
+            }, 3000);
+            return true;
+        } catch (ex) {
+            showError("Failed to copy repository url.");
+            console.warn("Error while sending copy command.", ex);
+            setTimeout(() => {
+                showError(false)
+            }, 3000);
+            return false;
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+}
+
 function handleRepoDeleteButton(evt)
 {
     noURLChange = true;
@@ -1491,6 +1525,7 @@ function updateLoggedInDOM()
         replaceElmWithDOM(e('repo-view-acl-container'), generateACLListDOM());
         checkRepoACLDraft();
     });
+    e('repo-view-url').addEventListener('click', handleCopyGitUrl);
     e('act-repo-delete').addEventListener('click', handleRepoDeleteButton);
     e('act-empty-repo-delete').addEventListener('click', handleEmptyRepoDeleteButton);
     e('act-repo-confirmdelete').addEventListener('click', deleteRepo);
