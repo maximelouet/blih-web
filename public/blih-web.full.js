@@ -1212,6 +1212,7 @@ function uploadSSH()
 function showRepoCreateModal()
 {
     showModal('repo-create', 'Create a repository');
+    e('repo-create-url').innerText = "git@git.epitech.eu:/"+USER.login+"/";
     e('repo-create-name').value = '';
     e('repo-create-name').focus();
     generateACLList({'ramassage-tek': 'r'});
@@ -1393,6 +1394,12 @@ function handleNavChange(evt)
     }
 }
 
+function handleGitNameKeyPress(evt)
+{
+    let url = "git@git.epitech.eu:/"+USER.login+"/"+e('repo-create-name').value;
+    e('repo-create-url').innerText = url;
+}
+
 function handleCopyGitUrl(evt)
 {
     const target = evt.target;
@@ -1525,7 +1532,9 @@ function updateLoggedInDOM()
         replaceElmWithDOM(e('repo-view-acl-container'), generateACLListDOM());
         checkRepoACLDraft();
     });
+    e('repo-create-name').addEventListener('keyup', handleGitNameKeyPress);
     e('repo-view-url').addEventListener('click', handleCopyGitUrl);
+    e('repo-create-url').addEventListener('click', handleCopyGitUrl);
     e('act-repo-delete').addEventListener('click', handleRepoDeleteButton);
     e('act-empty-repo-delete').addEventListener('click', handleEmptyRepoDeleteButton);
     e('act-repo-confirmdelete').addEventListener('click', deleteRepo);
