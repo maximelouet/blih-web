@@ -1620,6 +1620,7 @@ function login()
         }, 500);
         return;
     }
+    username = username.toLowerCase();
     let pass = new jsSHA("SHA-512", "TEXT");
     pass.update(password);
     password = null;
