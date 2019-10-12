@@ -1,3 +1,4 @@
-/private/
 /logs/
+/node_modules
+/private/
 /.well-known/
