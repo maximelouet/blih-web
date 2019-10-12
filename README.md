@@ -1,7 +1,5 @@
 # blih-web
 
-[![GuardRails badge](https://badges.production.guardrails.io/maximelouet/blih-web.svg)](https://www.guardrails.io)
-
 Web interface for Epitech BLIH
 
 ![Screenshot of the repository list](https://img.saumon.io/blih-web.png "Repository list")
