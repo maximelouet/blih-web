@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2019-10-13
+### Changed
+- Remove `node_modules` from repository following common best practices
+- Upgrade all npm dependencies
+- (try to) prevent auto capitalization of login input
+- Convert uppercase letters to lowercase in username
+- Change "ssh-rsa" to "ssh-" to prevent misinterpretation of SSH keys format (not everyone uses RSA keys!)
 
 ## [2.1.0] - 2018-10-03
 ### Changed
