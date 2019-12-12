@@ -1687,6 +1687,10 @@ function init()
         if (!LOADING)
             login();
     });
+    if (window.location.hostname !== 'blih.saumon.io') {
+        const elm = e('blih-web-uptime');
+        elm.parentElement.removeChild(elm);
+    }
     window.addEventListener('keydown', (evt) => {
         if (evt.keyCode != 13)
             return;

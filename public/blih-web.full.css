@@ -126,11 +126,29 @@ header {
     background: #c0392b;
 }
 footer {
-    text-align: right;
-    display: block;
     padding-top: 1rem;
     padding-bottom: 2rem;
 }
+footer > div {
+    display: flex;
+}
+footer > div > div {
+    flex: 50%;
+}
+footer > div > div:last-child {
+    text-align: right;
+}
+
+@media all and (max-width: 600px) {
+    footer > div {
+        flex-direction: column;
+    }
+    footer > div > div:first-child {
+        text-align: right;
+        order: 2;
+    }
+}
+
 footer a, #forget-me {
     text-decoration: none!important;
     color: #2060C0;
