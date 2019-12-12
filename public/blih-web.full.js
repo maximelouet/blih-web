@@ -193,6 +193,7 @@ function showSavedLogin()
         passInput.focus();
         let forgetMeElm = c('a');
         forgetMeElm.id = 'forget-me';
+        forgetMeElm.href = '#';
         forgetMeElm.addEventListener('click', (evt) => {
             evt.preventDefault();
             forgetMe();
