@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2019-12-12
+### Added
+- Add uptime status link in footer for blih.saumon.io instance
+
+### Changed
+- Fix "Forget me" link not being keyboard focusable (accessibility)
+- Upgrade ejs dependency
+- Improve footer design by using two columns
+- Decrease server-side BLIH request timeout to 5 seconds
+
 ## [2.2.0] - 2019-10-13
 ### Changed
 - Remove `node_modules` from repository following common best practices
