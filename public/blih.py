@@ -32,6 +32,7 @@ import hmac
 import hashlib
 import urllib.request
 import urllib.parse
+import ssl
 import json
 import getpass
 
@@ -84,6 +85,11 @@ class blih:
         req.add_header('User-Agent', self._useragent)
 
         try:
+            #Ignore SSL certificate errors
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
             f = urllib.request.urlopen(req)
         except urllib.error.HTTPError as e:
             print ('HTTP Error ' + str(e.code))
