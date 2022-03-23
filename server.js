@@ -177,7 +177,8 @@ function blih(method, url, signed_data, res) {
         method: method,
         url: 'https://blih.epitech.eu' + url,
         body: parsed_body,
-        timeout: 5000
+        timeout: 5000,
+        strictSSL: false
     }
 
     request(options, (error, response, body) => {
